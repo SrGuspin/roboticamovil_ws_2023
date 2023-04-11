@@ -68,11 +68,24 @@ class Movement(object):
         # angulo de giro
         x = goal_pose[0]
         y = goal_pose[1]
-        ang = getAngle([x, y], [self.x, self.y], self.frente)
+        ang = getAngle([x, y], [self.x, self.y], self.frente) * - 1
         # por cuanto giramos
         tiempo_giro = abs(ang/0.1)
         # llamamos a la fuuncion de moverse en linea recta (con 0 en velocidad angular)
-        self.aplicar_velocidad([0, 0.1, tiempo_giro])
+
+        direccion = ang - self.yaw
+        if direccion > 0:
+            self.aplicar_velocidad([0, 0.1, tiempo_giro])
+        else:
+            self.aplicar_velocidad([0, -0.1, tiempo_giro])
+
+        # Minimizamos el error
+        error = ang - self.yaw
+        tiempo_giro = abs(error/0.05)
+        if error > 0:
+            self.aplicar_velocidad([0, 0.05, tiempo_giro])
+        else:
+            self.aplicar_velocidad([0, -0.05, tiempo_giro])
 
         punto_1 = np.array([self.x, self.y])
         punto_2 = np.array([goal_pose[0], goal_pose[1]])
@@ -83,7 +96,19 @@ class Movement(object):
 
         goal_ang = goal_pose[2] - self.yaw
         tiempo_giro = abs(goal_ang/0.1)
-        self.aplicar_velocidad([0, 0.1, tiempo_giro])
+        direccion = ang - self.yaw
+        if direccion > 0:
+            self.aplicar_velocidad([0, 0.1, tiempo_giro])
+        else:
+            self.aplicar_velocidad([0, -0.1, tiempo_giro])
+
+        error = goal_pose[2] - self.yaw
+        rospy.logerr(error)
+        tiempo_giro = abs(error/0.05)
+        if error > 0:
+            self.aplicar_velocidad([0, 0.05, tiempo_giro])
+        else:
+            self.aplicar_velocidad([0, -0.05, tiempo_giro])
 
     # Funcion del nivel 3
     def accion_mover_cb(self, algo):
