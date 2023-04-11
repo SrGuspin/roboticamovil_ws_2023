@@ -9,9 +9,15 @@ import math
 
 
 def getAngle(a, b, c):
-    ang = (math.atan2(
-        c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
-    return ang
+    p1 = [a[0]-b[0], a[1]-b[1]]
+    p2 = [c[0]-b[0], c[1]-b[1]]
+    ang = math.atan2(p2[1], p2[0]) - math.atan2(p1[1], p1[0])
+
+    if ang > math.pi:
+        ang -= 2*math.pi
+    elif ang <= -math.pi:
+        ang += 2*math.pi
+    return ang * -1
 
 
 class Movement(object):
@@ -59,8 +65,9 @@ class Movement(object):
                                                                  odom.pose.pose.orientation.y,
                                                                  odom.pose.pose.orientation.z,
                                                                  odom.pose.pose.orientation.w))
-        self.frente = [np.cos(self.yaw)+self.x, np.sin(self.yaw)+self.y]
-        rospy.logerr([self.x, self.y, self.yaw])
+        self.frente = [np.cos(self.yaw)*0.1+self.x,
+                       np.sin(self.yaw)*0.1+self.y]
+        rospy.logerr([round(self.x, 3), round(self.y, 3), round(self.yaw, 3)])
 
     # Funcion del nivel 2
 
@@ -68,8 +75,9 @@ class Movement(object):
         # angulo de giro
         x = goal_pose[0]
         y = goal_pose[1]
-        ang = getAngle([x, y], [self.x, self.y], self.frente) * - 1
+        ang = getAngle([x, y], [self.x, self.y], self.frente)
         # por cuanto giramos
+        rospy.logerr(ang)
         tiempo_giro = abs(ang/0.1)
         # llamamos a la fuuncion de moverse en linea recta (con 0 en velocidad angular)
 
@@ -103,7 +111,6 @@ class Movement(object):
             self.aplicar_velocidad([0, -0.1, tiempo_giro])
 
         error = goal_pose[2] - self.yaw
-        rospy.logerr(error)
         tiempo_giro = abs(error/0.05)
         if error > 0:
             self.aplicar_velocidad([0, 0.05, tiempo_giro])
@@ -128,4 +135,9 @@ if __name__ == '__main__':
     mic.y = 0
     mic.yaw = 0
     mic.frente = [0.1, 0]
+    mic.mover_robot_a_destino((1, 0, 0))
+    rospy.logerr("Lugar Alcanzado!")
     mic.mover_robot_a_destino((1, 1, 1.57))
+    rospy.logerr("Lugar Alcanzado!")
+    mic.mover_robot_a_destino((0, 0, 0))
+    rospy.logerr("Lugar Alcanzado!")
