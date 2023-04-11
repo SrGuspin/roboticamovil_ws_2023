@@ -14,7 +14,7 @@ def getAngle(a, b, c):
     return ang
 
 
-class MoveInCircles(object):
+class Movement(object):
 
     def __init__(self):
         self.max_w = 1.0  # [rad/s]
@@ -98,7 +98,7 @@ class MoveInCircles(object):
 
 if __name__ == '__main__':
 
-    mic = MoveInCircles()
+    mic = Movement()
     mic.x = 0
     mic.y = 0
     mic.yaw = 0
