@@ -17,11 +17,10 @@ def getAngle(a, b, c):
         ang -= 2*math.pi
     elif ang <= -math.pi:
         ang += 2*math.pi
-    
+
     # arreglar -1, incluir condicioones
     # cuando es negativo hay que dejarlo negativo???
     return ang * -1
-
 
 
 class Movement(object):
@@ -81,7 +80,6 @@ class Movement(object):
         y = goal_pose[1]
         ang = getAngle([x, y], [self.x, self.y], self.frente)
         # por cuanto giramos
-        rospy.logerr(ang)
         tiempo_giro = abs(ang/0.1)
         # llamamos a la fuuncion de moverse en linea recta (con 0 en velocidad angular)
 
@@ -92,12 +90,9 @@ class Movement(object):
             self.aplicar_velocidad([0, -0.1, tiempo_giro])
 
         # Minimizamos el error
-        error = ang - self.yaw
+        error = ang - abs(self.yaw)
         tiempo_giro = abs(error/0.05)
-        if error > 0:
-            self.aplicar_velocidad([0, 0.05, tiempo_giro])
-        else:
-            self.aplicar_velocidad([0, -0.05, tiempo_giro])
+        self.aplicar_velocidad([0, 0.05, tiempo_giro])
 
         punto_1 = np.array([self.x, self.y])
         punto_2 = np.array([goal_pose[0], goal_pose[1]])
