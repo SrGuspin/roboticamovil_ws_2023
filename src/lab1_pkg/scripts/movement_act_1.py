@@ -17,7 +17,11 @@ def getAngle(a, b, c):
         ang -= 2*math.pi
     elif ang <= -math.pi:
         ang += 2*math.pi
+    
+    # arreglar -1, incluir condicioones
+    # cuando es negativo hay que dejarlo negativo???
     return ang * -1
+
 
 
 class Movement(object):
