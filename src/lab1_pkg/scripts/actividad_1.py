@@ -35,7 +35,7 @@ class Movement(object):
         self.rate_obj = rospy.Rate(self.rate_hz)
 
         # Lectura odometria
-        self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odometry_cb)
+        # self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odometry_cb)
 
         self.mover_sub = rospy.Subscriber(
             '/goal_list', PoseArray, self.accion_mover_cb)
@@ -82,6 +82,9 @@ class Movement(object):
 
         tiempo_giro = abs(ang/0.2)
         self.aplicar_velocidad([0, 0.2, tiempo_giro])
+        self.frente = [np.cos(self.yaw)*0.1+self.x,
+                       np.sin(self.yaw)*0.1+self.y]
+        self.yaw += ang
 
         # Mover a destino
         punto_1 = np.array([self.x, self.y])
@@ -90,11 +93,16 @@ class Movement(object):
 
         tiempo_lin = dist_puntos/0.2
         self.aplicar_velocidad([0.2, 0, tiempo_lin])
+        self.x = goal_pose[0]
+        self.y = goal_pose[1]
+        self.frente = [np.cos(self.yaw)*0.1+self.x,
+                       np.sin(self.yaw)*0.1+self.y]
 
         # Girar robot a angulo deseado.
         goal_ang = goal_pose[2] - self.yaw
         tiempo_giro = abs(goal_ang/0.2)
         self.aplicar_velocidad([0, 0.2, tiempo_giro])
+        self.yaw = goal_ang
 
     # Funcion del nivel 3
     def accion_mover_cb(self, algo):
