@@ -134,11 +134,8 @@ if __name__ == '__main__':
     mic.y = 0
     mic.yaw = 0
     mic.frente = [0.1, 0]
-    mic.mover_robot_a_destino((1, 0, 0))
-    rospy.logerr("Lugar Alcanzado! 1")
-    mic.mover_robot_a_destino((1, 1, 1.75))
-    rospy.logerr("Lugar Alcanzado! 2")
-    mic.mover_robot_a_destino((0, 1, 3))
-    rospy.logerr("Lugar Alcanzado! 3")
-    mic.mover_robot_a_destino((0, 0, 0))
-    rospy.logerr("Lugar Alcanzado! 4")
+
+    lista_objetivos = [(1, 0, 0), (1, 1, 1.57), (0, 0, 0)]
+    for obj in lista_objetivos:
+        mic.mover_robot_a_destino(obj)
+        rospy.logerr(f"Objetivo Alcanzado! {obj}")

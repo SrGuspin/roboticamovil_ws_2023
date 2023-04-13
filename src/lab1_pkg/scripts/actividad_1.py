@@ -118,4 +118,4 @@ if __name__ == '__main__':
     lista_objetivos = [(1, 0, 0), (1, 1, 1.57), (0, 0, 0)]
     for obj in lista_objetivos:
         mic.mover_robot_a_destino(obj)
-        rospy.logerr("Objetivo Alcanzado!")
+        rospy.logerr(f"Objetivo Alcanzado! {obj}")
