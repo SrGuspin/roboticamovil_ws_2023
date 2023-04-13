@@ -13,13 +13,11 @@ def getAngle(a, b, c):
     p2 = [c[0]-b[0], c[1]-b[1]]
     ang = math.atan2(p2[1], p2[0]) - math.atan2(p1[1], p1[0])
 
-    if ang > math.pi:
+    if ang >= math.pi:
         ang -= 2*math.pi
     elif ang <= -math.pi:
         ang += 2*math.pi
 
-    # arreglar -1, incluir condicioones
-    # cuando es negativo hay que dejarlo negativo???
     return ang * -1
 
 
@@ -80,9 +78,10 @@ class Movement(object):
         y = goal_pose[1]
         ang = getAngle([x, y], [self.x, self.y], self.frente)
 
-        tiempo_giro = abs(ang/0.5)
+        rospy.logerr(ang)
+        tiempo_giro = abs(ang)
         self.yaw += ang
-        self.aplicar_velocidad([0, 0.5, tiempo_giro])
+        self.aplicar_velocidad([0, 1, tiempo_giro])
         self.frente = [np.cos(self.yaw)*0.1+self.x,
                        np.sin(self.yaw)*0.1+self.y]
 
@@ -99,10 +98,15 @@ class Movement(object):
                        np.sin(self.yaw)*0.1+self.y]
 
         # Girar robot a angulo deseado.
-        goal_ang = goal_pose[2] - self.yaw
-        tiempo_giro = abs(goal_ang/0.5)
-        self.aplicar_velocidad([0, 0.5, tiempo_giro])
-        self.yaw = goal_ang
+        goal_ang = (goal_pose[2] - abs(self.yaw))
+        tiempo_giro = abs(goal_ang/1)
+        rospy.logerr([goal_pose[2], self.yaw, goal_ang])
+        direccion = ang - self.yaw
+        if direccion > 0:
+            self.aplicar_velocidad([0, 1, tiempo_giro])
+        else:
+            self.aplicar_velocidad([0, 1, tiempo_giro])
+        self.yaw = goal_pose[2]
 
     # Funcion del nivel 3
     def accion_mover_cb(self, algo):
@@ -123,7 +127,7 @@ if __name__ == '__main__':
     mic.yaw = 0
     mic.frente = [0.1, 0]
 
-    lista_objetivos = [(1, 0, 0), (1, 1, 1.57), (0, 1, 2.4), (0, 0, 0)]
+    lista_objetivos = [(1, 0, 0), (0, 0, 1.57)]
     for obj in lista_objetivos:
         mic.mover_robot_a_destino(obj)
         rospy.logerr(f"Objetivo Alcanzado! {obj}")

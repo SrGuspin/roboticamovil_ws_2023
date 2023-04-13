@@ -76,6 +76,7 @@ class Movement(object):
 
     def mover_robot_a_destino(self, goal_pose):
         # Alinear con destino>
+        x = goal_pose[0]
         y = goal_pose[1]
         ang = getAngle([x, y], [self.x, self.y], self.frente)
 

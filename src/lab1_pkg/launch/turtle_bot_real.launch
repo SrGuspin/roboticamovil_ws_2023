@@ -1,5 +1,5 @@
 <launch>
 
-	<node pkg="lab1_pkg" name="dead_reckoning_nav" type="actividad_1.py" />
+	<node pkg="lab1_pkg" name="dead_reckoning_nav" type="actividad_2.py" />
 
 </launch>
