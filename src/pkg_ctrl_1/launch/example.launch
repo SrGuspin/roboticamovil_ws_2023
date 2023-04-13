@@ -1,0 +1,6 @@
+<launch>
+
+	<node pkg="pkg_ctrl_1" name="my_first_talker" type="chatter_talker.py" />
+    <node pkg="pkg_ctrl_1" name="my_first_listener" type="chatter_listener.py" />
+
+</launch>
