@@ -15,10 +15,10 @@ def getAngle(a, b, c):
 
     if ang >= math.pi:
         ang -= 2*math.pi
-    elif ang <= -math.pi:
+    elif ang < -math.pi:
         ang += 2*math.pi
 
-    return ang * -1
+    return ang
 
 
 class Movement(object):
@@ -45,7 +45,7 @@ class Movement(object):
         ang_speed = tripleta[1]
         tiempo = tripleta[2]
 
-        ciclos = int(tiempo*self.rate_hz)
+        ciclos = round(tiempo*self.rate_hz)
         speed = Twist()
         speed.linear.x = lin_speed
         speed.angular.z = ang_speed
@@ -76,36 +76,45 @@ class Movement(object):
         # Alinear con destino
         x = goal_pose[0]
         y = goal_pose[1]
-        ang = getAngle([x, y], [self.x, self.y], self.frente)
-
-        rospy.logerr(ang)
-        tiempo_giro = abs(ang)
-        self.yaw += ang
-        self.aplicar_velocidad([0, 1, tiempo_giro])
         self.frente = [np.cos(self.yaw)*0.1+self.x,
                        np.sin(self.yaw)*0.1+self.y]
+        ang = getAngle([x, y], [self.x, self.y], self.frente)
+
+        rospy.logerr([ang, self.yaw])
+        tiempo_giro = abs(ang/1)
+
+        if ang > 0:
+            self.aplicar_velocidad([0, -1, tiempo_giro])
+        else:
+            self.aplicar_velocidad([0, 1, tiempo_giro])
+
+        self.yaw += abs(ang)
 
         # Mover a destino
         punto_1 = np.array([self.x, self.y])
-        punto_2 = np.array([goal_pose[0], goal_pose[1]])
+        punto_2 = np.array([x, y])
         dist_puntos = np.linalg.norm(punto_1 - punto_2)
 
         tiempo_lin = abs(dist_puntos/0.2)
         self.aplicar_velocidad([0.2, 0, tiempo_lin])
         self.x = goal_pose[0]
         self.y = goal_pose[1]
-        self.frente = [np.cos(self.yaw)*0.1+self.x,
-                       np.sin(self.yaw)*0.1+self.y]
 
         # Girar robot a angulo deseado.
-        goal_ang = (goal_pose[2] - abs(self.yaw))
+
+        goal_ang = goal_pose[2] - self.yaw
+        rospy.logerr([goal_ang, self.yaw, goal_pose[2]])
+
+        if goal_ang >= math.pi:
+            goal_ang -= 2*math.pi
+        elif goal_ang < -math.pi:
+            goal_ang += 2*math.pi
+
         tiempo_giro = abs(goal_ang/1)
-        rospy.logerr([goal_pose[2], self.yaw, goal_ang])
-        direccion = ang - self.yaw
-        if direccion > 0:
+        if goal_ang > 0:
             self.aplicar_velocidad([0, 1, tiempo_giro])
         else:
-            self.aplicar_velocidad([0, 1, tiempo_giro])
+            self.aplicar_velocidad([0, -1, tiempo_giro])
         self.yaw = goal_pose[2]
 
     # Funcion del nivel 3
@@ -127,7 +136,7 @@ if __name__ == '__main__':
     mic.yaw = 0
     mic.frente = [0.1, 0]
 
-    lista_objetivos = [(1, 0, 0), (0, 0, 1.57)]
+    lista_objetivos = [(1, 0, 1.57), (1, 1, 1.57), (0, 1, -1.57), (0, 0, 0)]
     for obj in lista_objetivos:
         mic.mover_robot_a_destino(obj)
         rospy.logerr(f"Objetivo Alcanzado! {obj}")
