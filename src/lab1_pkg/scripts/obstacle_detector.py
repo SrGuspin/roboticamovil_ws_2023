@@ -25,6 +25,8 @@ class TurtlebotController(object):
             '/camera/depth/image_raw', Image, self.depth_image_cb)
         self.cmd_vel_pub = rospy.Publisher(
             '/yocs_cmd_vel_mux/input/navigation', Twist, queue_size=10)
+        self.occupancy_state_pub = rospy.Publisher(
+            '/occupancy_state', Vector3, queue_size=10)
 
     def odom_cb(self, msg):
         x = msg.pose.pose.position.x
@@ -55,28 +57,64 @@ class TurtlebotController(object):
 
         obstacle = False
         if self.depth_image_np is not None:
-            column_sample = self.depth_image_np[:, [0, 320, 639]]
-            column_sample = np.where(
-                np.isnan(column_sample), 0.0, column_sample)
-            obstacle = np.any(column_sample < 0.5)
-        return obstacle
+            columna1 = self.depth_image_np[:, 0]
+            columna2 = self.depth_image_np[:, 320]
+            columna3 = self.depth_image_np[:, 639]
+
+            columna1 = np.where(np.isnan(columna1), 0.0, columna1)
+            columna2 = np.where(np.isnan(columna2), 0.0, columna2)
+            columna3 = np.where(np.isnan(columna3), 0.0, columna3)
+
+            obstacle1 = np.any(columna1 < 0.5)
+            obstacle2 = np.any(columna2 < 0.5)
+            obstacle3 = np.any(columna3 < 0.5)
+
+            if obstacle1:
+                obstacle1 = 1
+            else:
+                obstacle1 = 0
+
+            if obstacle2:
+                obstacle2 = 1
+            else:
+                obstacle2 = 0
+
+            if obstacle3:
+                obstacle3 = 1
+            else:
+                obstacle3 = 0
+
+            vector = Vector3(obstacle1, obstacle2, obstacle3)
+            self.occupancy_state_pub.publish(vector)
+            rospy.loginfo((obstacle1, obstacle2, obstacle3))
+        else:
+            vector = Vector3(0, 0, 0)
+        return vector
 
     def run(self):
         free_space = True
         while not rospy.is_shutdown():
-            if self.obtacle_detected():
+            vector = self.obtacle_detected()
+            if vector.x == 1:
+                free_space = False
+                giro = -1
+            elif vector.z == 1:
+                giro = 1
+                free_space = False
+            else:
+                giro = 0
+                free_space = True
+
+            if not free_space:
                 # Rotate
                 speed = Twist()
                 speed.linear.x = 0
-                speed.angular.z = 0.2
-                if free_space:
-                    free_space = False
+                speed.angular.z = 0.2 * giro
             else:
                 # Go forward
                 speed = Twist()
                 speed.linear.x = 0.3
                 speed.angular.z = 0
-                free_space = True
             self.cmd_vel_pub.publish(speed)
             self.rate_obj.sleep()
 
