@@ -86,7 +86,6 @@ class TurtlebotController(object):
 
             vector = Vector3(obstacle1, obstacle2, obstacle3)
             self.occupancy_state_pub.publish(vector)
-            rospy.loginfo((obstacle1, obstacle2, obstacle3))
         else:
             vector = Vector3(0, 0, 0)
         return vector
@@ -94,13 +93,15 @@ class TurtlebotController(object):
     def run(self):
         free_space = True
         while not rospy.is_shutdown():
+            retroceso = 0
             vector = self.obtacle_detected()
+
             if vector.x == 1:
                 free_space = False
-                giro = -1
+                giro = -0.2
             elif vector.z == 1:
-                giro = 1
                 free_space = False
+                giro = 0.2
             else:
                 giro = 0
                 free_space = True
@@ -108,8 +109,8 @@ class TurtlebotController(object):
             if not free_space:
                 # Rotate
                 speed = Twist()
-                speed.linear.x = 0
-                speed.angular.z = 0.2 * giro
+                speed.linear.x = retroceso
+                speed.angular.z = giro
             else:
                 # Go forward
                 speed = Twist()
