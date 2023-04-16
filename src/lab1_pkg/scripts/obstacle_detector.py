@@ -93,7 +93,6 @@ class TurtlebotController(object):
     def run(self):
         free_space = True
         while not rospy.is_shutdown():
-            retroceso = 0
             vector = self.obtacle_detected()
 
             if vector.x == 1:
@@ -109,7 +108,7 @@ class TurtlebotController(object):
             if not free_space:
                 # Rotate
                 speed = Twist()
-                speed.linear.x = retroceso
+                speed.linear.x = 0
                 speed.angular.z = giro
             else:
                 # Go forward
