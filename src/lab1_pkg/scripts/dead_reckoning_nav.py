@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-from geometry_msgs.msg import Twist, PoseArray
+from geometry_msgs.msg import Twist, PoseArray, Pose
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
 import numpy as np
@@ -26,7 +26,7 @@ class Movement(object):
     def __init__(self):
         self.max_w = 1.0  # [rad/s]
         self.max_v = 0.2  # [m/s]
-        self.factor_correcion_1 = 1.09
+        self.factor_correcion_1 = 1.1
         self.factor_correcion_2 = 1.01
         rospy.init_node('dead_reckoning_nav')
         self.cmd_vel_mux_pub = rospy.Publisher(
@@ -36,10 +36,12 @@ class Movement(object):
 
         # Lectura odometria
         self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odometry_cb)
+        self.real_sub = rospy.Subscriber(
+            '/real_pose', Pose, self.real_pose_cb)
 
         self.mover_sub = rospy.Subscriber(
             '/goal_list', PoseArray, self.accion_mover_cb)
-        self.nombre_archivo = '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_1_c.txt'
+        self.nombre_archivo = '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_5_c.txt'
         with open(self.nombre_archivo, 'w') as archivo:
             archivo.write("0,0\n")
 
@@ -74,9 +76,18 @@ class Movement(object):
                                                   odom.pose.pose.orientation.y,
                                                   odom.pose.pose.orientation.z,
                                                   odom.pose.pose.orientation.w))
-        rospy.loginfo([round(x, 3), round(y, 3), round(yaw, 3)])
+        # rospy.loginfo([round(x, 3), round(y, 3), round(yaw, 3)])
         with open(self.nombre_archivo, 'a') as archivo:
             archivo.write(f"{x},{y}\n")
+
+    def real_pose_cb(self, odom):
+        x = odom.position.x
+        y = odom.position.y
+        roll, pitch, yaw = euler_from_quaternion((odom.orientation.x,
+                                                  odom.orientation.y,
+                                                  odom.orientation.z,
+                                                  odom.orientation.w))
+        rospy.loginfo([round(x, 3), round(y, 3), round(yaw, 3)])
 
     # Funcion del nivel 2
 
@@ -127,13 +138,18 @@ class Movement(object):
 
     # Funcion del nivel 3
     def accion_mover_cb(self, algo):
-        print("asdmnkasndkasl")
-        # self.mover_robot_a_destino((x, y, yaw))
+        poses = algo
+        for i in poses:
+            x = i.position.x
+            y = i.position.y
+            yaw = i.orientation.w
+            self.mover_robot_a_destino((x, y, yaw))
 
 
 if __name__ == '__main__':
 
     mic = Movement()
+    # rospy.spin()
     mic.x = 0
     mic.y = 0
     mic.yaw = 0

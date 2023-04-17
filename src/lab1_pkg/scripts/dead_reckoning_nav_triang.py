@@ -139,8 +139,7 @@ if __name__ == '__main__':
     mic.yaw = 0
     mic.frente = [0.1, 0]
 
-    lista_objetivos = [(1, 0, 1.57), (1, 1, np.pi), (0, 1, -1.57), (0, 0, 0), (1, 0, 1.57),
-                       (1, 1, np.pi), (0, 1, -1.57), (0, 0, 0), (1, 0, 1.57), (1, 1, np.pi), (0, 1, -1.57), (0, 0, 0)]
+    lista_objetivos = [(1, 0, 0), (1, 1, 1.57), (0, 0, 0)]
     for obj in lista_objetivos:
         mic.mover_robot_a_destino(obj)
         punto_1 = np.array(mic.pos)

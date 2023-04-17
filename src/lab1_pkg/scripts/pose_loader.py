@@ -32,14 +32,19 @@ class PoseLoader(object):
         self.rate = rospy.Rate(self.rate_hz)
 
     def mover_robot(self):
+        while not rospy.is_shutdown() and self.cmd_pose_pub.get_num_connections() == 0:
+            pass
+
+        pose_array = PoseArray()
         for cosa in self.puntos:
-            obj = PoseArray()
-            obj.poses.append(cosa[0])
-            obj.poses.append(cosa[1])
-            obj.poses.append(cosa[2])
-            print(obj.poses)
-            self.cmd_pose_pub.publish(obj)
-            self.rate.sleep()
+            pose = Pose()  # crear un objeto de tipo Pose
+            pose.position.x = cosa[0]  # establecer la posición x
+            pose.position.y = cosa[1]  # establecer la posición y
+            pose.position.z = 0.0  # establecer la posición z
+            pose.orientation.w = cosa[2]  # establecer la orientación
+            pose_array.poses.append(pose)  # agregar la pose a la matriz
+
+        self.cmd_pose_pub.publish(pose_array)
 
 
 if __name__ == '__main__':

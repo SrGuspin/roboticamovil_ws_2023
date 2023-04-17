@@ -30,8 +30,8 @@ colores = ['red', 'blue', 'green', 'orange', 'purple']
 puntos = [(0, 0), (1, 0), (1, 1), (0, 1)]
 
 plt.figure(figsize=(8, 8))
-plt.xlim(-1, 2)
-plt.ylim(-1, 2)
+plt.xlim(-1, 3)
+plt.ylim(-1, 3)
 for i, trayectoria in enumerate(trayectorias):
     plt.plot(trayectoria[0], trayectoria[1],
              color=colores[i], label=f'Trayectoria {i}')
