@@ -33,10 +33,11 @@ class Movement(object):
         self.rate_obj = rospy.Rate(self.rate_hz)
 
         # Lectura odometria
-        # self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odometry_cb)
+        self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odometry_cb)
 
         self.mover_sub = rospy.Subscriber(
             '/goal_list', PoseArray, self.accion_mover_cb)
+        self.nombre_archivo = '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_5.txt'
 
     # Funcion del nivel 1.
 
@@ -60,15 +61,15 @@ class Movement(object):
             ciclos -= 1
 
     def odometry_cb(self, odom):
-        self.x = odom.pose.pose.position.x
-        self.y = odom.pose.pose.position.y
-        self.roll, self.pitch, self.yaw = euler_from_quaternion((odom.pose.pose.orientation.x,
-                                                                 odom.pose.pose.orientation.y,
-                                                                 odom.pose.pose.orientation.z,
-                                                                 odom.pose.pose.orientation.w))
-        self.frente = [np.cos(self.yaw)*0.1+self.x,
-                       np.sin(self.yaw)*0.1+self.y]
-        rospy.logerr([round(self.x, 3), round(self.y, 3), round(self.yaw, 3)])
+        x = odom.pose.pose.position.x
+        y = odom.pose.pose.position.y
+        roll, pitch, yaw = euler_from_quaternion((odom.pose.pose.orientation.x,
+                                                  odom.pose.pose.orientation.y,
+                                                  odom.pose.pose.orientation.z,
+                                                  odom.pose.pose.orientation.w))
+        rospy.loginfo([round(x, 3), round(y, 3), round(yaw, 3)])
+        with open(self.nombre_archivo, 'a') as archivo:
+            archivo.write(f"{x},{y}\n")
 
     # Funcion del nivel 2
 
@@ -136,7 +137,8 @@ if __name__ == '__main__':
     mic.yaw = 0
     mic.frente = [0.1, 0]
 
-    lista_objetivos = [(1, 0, 1.57), (1, 1, 1.57), (0, 1, -1.57), (0, 0, 0)]
+    lista_objetivos = [(1, 0, 1.57), (1, 1, 1.57), (0, 1, -1.57), (0, 0, 0), (1, 0, 1.57),
+                       (1, 1, 1.57), (0, 1, -1.57), (0, 0, 0), (1, 0, 1.57), (1, 1, 1.57), (0, 1, -1.57), (0, 0, 0)]
     for obj in lista_objetivos:
         mic.mover_robot_a_destino(obj)
         rospy.logerr(f"Objetivo Alcanzado! {obj}")
