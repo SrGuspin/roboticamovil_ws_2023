@@ -1,5 +1,6 @@
 <launch>
 
-	<node pkg="lab1_pkg" name="dead_reckoning_nav" type="dead_reckoning_nav.py" />
+	<node pkg="lab1_pkg" name="dead_reckoning_nav" type="dead_reckoning_nav.py" output="screen"/>
+    <node pkg="lab1_pkg" name="pose_loader" type="pose_loader.py" output="screen"/>
 
 </launch>

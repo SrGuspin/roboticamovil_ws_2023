@@ -124,13 +124,13 @@ class TurtlebotController(object):
             vector = self.vector
 
             if vector.x == 1 and vector.z == 1:
-                self.sound_handler.say('obstacle detected')
+                self.sound_handler.say('obstacle detected center')
                 self.aplicar_velocidad((0, giro_der, tiempo_medio_giro))
             elif vector.x == 1:
-                self.sound_handler.say('obstacle detected')
+                self.sound_handler.say('obstacle detected right')
                 self.aplicar_velocidad((0, giro_der, tiempo_medio_giro/10))
             elif vector.z == 1:
-                self.sound_handler.say('obstacle detected')
+                self.sound_handler.say('obstacle detected left')
                 self.aplicar_velocidad((0, giro_izq, tiempo_medio_giro/10))
             else:
                 self.aplicar_velocidad((0.3, 0, 1))

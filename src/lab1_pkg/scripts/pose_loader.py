@@ -7,7 +7,7 @@ from tf.transformations import euler_from_quaternion
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist, PoseArray, Pose
 
-
+    
 def leer_archivo(nombre_archivo):
     with open(nombre_archivo, 'r') as archivo:
         lineas = archivo.readlines()
@@ -50,5 +50,6 @@ class PoseLoader(object):
 if __name__ == '__main__':
 
     nombre_archivo = "/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/goal_list.txt"
+    # nombre_archivo = "/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/goal_list_triang.txt"
     pose = PoseLoader(nombre_archivo)
     pose.mover_robot()
