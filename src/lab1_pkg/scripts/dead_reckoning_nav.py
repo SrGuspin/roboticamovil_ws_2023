@@ -26,7 +26,7 @@ class Movement(object):
     def __init__(self):
         self.max_w = 1.0  # [rad/s]
         self.max_v = 0.2  # [m/s]
-        self.factor_correcion = 1.05
+        self.factor_correcion = 0.8
         rospy.init_node('dead_reckoning_nav')
         self.cmd_vel_mux_pub = rospy.Publisher(
             '/yocs_cmd_vel_mux/input/navigation', Twist, queue_size=10)
@@ -55,8 +55,6 @@ class Movement(object):
         speed.angular.z = ang_speed
         while not rospy.is_shutdown():
             if ciclos >= 0:
-                rospy.loginfo('publishing speed (%f, %f)' %
-                              (lin_speed, ang_speed))
                 self.cmd_vel_mux_pub.publish(speed)
                 self.rate_obj.sleep()
             else:
@@ -66,11 +64,12 @@ class Movement(object):
     def odometry_cb(self, odom):
         x = odom.pose.pose.position.x
         y = odom.pose.pose.position.y
+        self.pos = [x, y]
         roll, pitch, yaw = euler_from_quaternion((odom.pose.pose.orientation.x,
                                                   odom.pose.pose.orientation.y,
                                                   odom.pose.pose.orientation.z,
                                                   odom.pose.pose.orientation.w))
-        rospy.loginfo([round(x, 3), round(y, 3), round(yaw, 3)])
+        # rospy.loginfo([round(x, 3), round(y, 3), round(yaw, 3)])
         with open(self.nombre_archivo, 'a') as archivo:
             archivo.write(f"{x},{y}\n")
 
@@ -83,7 +82,7 @@ class Movement(object):
         self.frente = [np.cos(self.yaw)*0.1+self.x,
                        np.sin(self.yaw)*0.1+self.y]
         ang = getAngle([x, y], [self.x, self.y], self.frente)
-        rospy.logerr([ang, self.yaw])
+        # rospy.logerr([ang, self.yaw])
         tiempo_giro = abs(ang/1) * self.factor_correcion
 
         if ang > 0:
@@ -98,7 +97,7 @@ class Movement(object):
         punto_2 = np.array([x, y])
         dist_puntos = np.linalg.norm(punto_1 - punto_2)
 
-        tiempo_lin = abs(dist_puntos/0.2)*self.factor_correcion
+        tiempo_lin = abs(dist_puntos/0.2)
         self.aplicar_velocidad([0.2, 0, tiempo_lin])
         self.x = goal_pose[0]
         self.y = goal_pose[1]
@@ -106,14 +105,14 @@ class Movement(object):
         # Girar robot a angulo deseado.
 
         goal_ang = goal_pose[2] - self.yaw
-        rospy.logerr([goal_ang, self.yaw, goal_pose[2]])
+        # rospy.logerr([goal_ang, self.yaw, goal_pose[2]])
 
         if goal_ang >= math.pi:
             goal_ang -= 2*math.pi
         elif goal_ang < -math.pi:
             goal_ang += 2*math.pi
 
-        tiempo_giro = abs(goal_ang/1)
+        tiempo_giro = abs(goal_ang/1) * self.factor_correcion
         if goal_ang > 0:
             self.aplicar_velocidad([0, 1, tiempo_giro])
         else:
@@ -143,4 +142,8 @@ if __name__ == '__main__':
                        (1, 1, np.pi), (0, 1, -1.57), (0, 0, 0), (1, 0, 1.57), (1, 1, np.pi), (0, 1, -1.57), (0, 0, 0)]
     for obj in lista_objetivos:
         mic.mover_robot_a_destino(obj)
-        rospy.logerr(f"Objetivo Alcanzado! {obj}")
+        punto_1 = np.array(mic.pos)
+        punto_2 = np.array([obj[0], obj[1]])
+        error = np.linalg.norm(punto_1 - punto_2)
+        rospy.loginfo(round(error, 3))
+        rospy.loginfo(f"Objetivo Alcanzado! {obj}")
