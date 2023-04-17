@@ -14,15 +14,15 @@ def leer_archivo(nombre_archivo):
 
 
 trayectoria1 = leer_archivo(
-    '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_1.txt')
+    '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_1_c.txt')
 trayectoria2 = leer_archivo(
-    '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_2.txt')
+    '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_2_c.txt')
 trayectoria3 = leer_archivo(
-    '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_3.txt')
+    '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_3_c.txt')
 trayectoria4 = leer_archivo(
-    '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_4.txt')
+    '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_4_c.txt')
 trayectoria5 = leer_archivo(
-    '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_5.txt')
+    '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_5_c.txt')
 
 trayectorias = [trayectoria1, trayectoria2,
                 trayectoria3, trayectoria4, trayectoria5]

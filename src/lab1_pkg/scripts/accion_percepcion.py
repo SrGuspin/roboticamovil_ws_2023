@@ -6,11 +6,12 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import Vector3, Twist
 from tf.transformations import euler_from_quaternion
 
-# from turtlebot_audio import TurtlebotAudio
+# from turtlebot_audio import
 
 import numpy as np
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
+from sound_play.libsoundplay import SoundClient
 
 
 class TurtlebotController(object):
@@ -18,6 +19,7 @@ class TurtlebotController(object):
     def __init__(self):
         # self.speaker = TurtlebotAudio()
         self.bridge = CvBridge()
+        self.sound_handler = SoundClient(blocking=True)
         self.vector = Vector3(0, 0, 0)
         self.depth_image_np = None
         self.rate_hz = 5
@@ -117,14 +119,18 @@ class TurtlebotController(object):
         giro_der = -0.2
         giro_izq = 0.2
         tiempo_medio_giro = int(np.pi/giro_izq)
+        self.sound_handler.say('Hello human, welcome to Robotica Movil')
         while not rospy.is_shutdown():
             vector = self.vector
 
             if vector.x == 1 and vector.z == 1:
+                self.sound_handler.say('obstacle detected')
                 self.aplicar_velocidad((0, giro_der, tiempo_medio_giro))
             elif vector.x == 1:
+                self.sound_handler.say('obstacle detected')
                 self.aplicar_velocidad((0, giro_der, tiempo_medio_giro/10))
             elif vector.z == 1:
+                self.sound_handler.say('obstacle detected')
                 self.aplicar_velocidad((0, giro_izq, tiempo_medio_giro/10))
             else:
                 self.aplicar_velocidad((0.3, 0, 1))
@@ -132,6 +138,6 @@ class TurtlebotController(object):
 
 if __name__ == '__main__':
 
-    rospy.init_node('reactive_movement')
+    rospy.init_node('accion_percepcion')
     turtlebot = TurtlebotController()
     turtlebot.run()

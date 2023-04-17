@@ -26,6 +26,7 @@ class Movement(object):
     def __init__(self):
         self.max_w = 1.0  # [rad/s]
         self.max_v = 0.2  # [m/s]
+        self.factor_correcion = 1.05
         rospy.init_node('dead_reckoning_nav')
         self.cmd_vel_mux_pub = rospy.Publisher(
             '/yocs_cmd_vel_mux/input/navigation', Twist, queue_size=10)
@@ -37,7 +38,9 @@ class Movement(object):
 
         self.mover_sub = rospy.Subscriber(
             '/goal_list', PoseArray, self.accion_mover_cb)
-        self.nombre_archivo = '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_5.txt'
+        self.nombre_archivo = '/home/govidal/code/robotica-movil/workspace/src/lab1_pkg/scripts/data_1_c.txt'
+        with open(self.nombre_archivo, 'w') as archivo:
+            archivo.write("0,0\n")
 
     # Funcion del nivel 1.
 
@@ -80,9 +83,8 @@ class Movement(object):
         self.frente = [np.cos(self.yaw)*0.1+self.x,
                        np.sin(self.yaw)*0.1+self.y]
         ang = getAngle([x, y], [self.x, self.y], self.frente)
-
         rospy.logerr([ang, self.yaw])
-        tiempo_giro = abs(ang/1)
+        tiempo_giro = abs(ang/1) * self.factor_correcion
 
         if ang > 0:
             self.aplicar_velocidad([0, -1, tiempo_giro])
@@ -96,7 +98,7 @@ class Movement(object):
         punto_2 = np.array([x, y])
         dist_puntos = np.linalg.norm(punto_1 - punto_2)
 
-        tiempo_lin = abs(dist_puntos/0.2)
+        tiempo_lin = abs(dist_puntos/0.2)*self.factor_correcion
         self.aplicar_velocidad([0.2, 0, tiempo_lin])
         self.x = goal_pose[0]
         self.y = goal_pose[1]
@@ -137,8 +139,8 @@ if __name__ == '__main__':
     mic.yaw = 0
     mic.frente = [0.1, 0]
 
-    lista_objetivos = [(1, 0, 1.57), (1, 1, 1.57), (0, 1, -1.57), (0, 0, 0), (1, 0, 1.57),
-                       (1, 1, 1.57), (0, 1, -1.57), (0, 0, 0), (1, 0, 1.57), (1, 1, 1.57), (0, 1, -1.57), (0, 0, 0)]
+    lista_objetivos = [(1, 0, 1.57), (1, 1, np.pi), (0, 1, -1.57), (0, 0, 0), (1, 0, 1.57),
+                       (1, 1, np.pi), (0, 1, -1.57), (0, 0, 0), (1, 0, 1.57), (1, 1, np.pi), (0, 1, -1.57), (0, 0, 0)]
     for obj in lista_objetivos:
         mic.mover_robot_a_destino(obj)
         rospy.logerr(f"Objetivo Alcanzado! {obj}")
