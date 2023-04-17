@@ -5,7 +5,7 @@ import math
 import numpy as np
 from tf.transformations import euler_from_quaternion
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist, PoseArray
+from geometry_msgs.msg import Twist, PoseArray, Pose
 
 
 def leer_archivo(nombre_archivo):

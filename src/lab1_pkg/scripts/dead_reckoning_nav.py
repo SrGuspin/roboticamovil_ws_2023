@@ -138,7 +138,7 @@ class Movement(object):
 
     # Funcion del nivel 3
     def accion_mover_cb(self, algo):
-        poses = algo
+        poses = algo.poses
         for i in poses:
             x = i.position.x
             y = i.position.y
@@ -149,18 +149,7 @@ class Movement(object):
 if __name__ == '__main__':
 
     mic = Movement()
-    # rospy.spin()
     mic.x = 0
     mic.y = 0
     mic.yaw = 0
-    mic.frente = [0.1, 0]
-
-    lista_objetivos = [(1, 0, 1.57), (1, 1, np.pi), (0, 1, -1.57), (0, 0, 0), (1, 0, 1.57),
-                       (1, 1, np.pi), (0, 1, -1.57), (0, 0, 0), (1, 0, 1.57), (1, 1, np.pi), (0, 1, -1.57), (0, 0, 0)]
-    for obj in lista_objetivos:
-        mic.mover_robot_a_destino(obj)
-        punto_1 = np.array(mic.pos)
-        punto_2 = np.array([obj[0], obj[1]])
-        error = np.linalg.norm(punto_1 - punto_2)
-        rospy.loginfo(round(error, 3))
-        rospy.loginfo(f"Objetivo Alcanzado! {obj}")
+    rospy.spin()

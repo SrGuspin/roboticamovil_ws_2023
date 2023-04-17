@@ -10,7 +10,7 @@ def leer_archivo(nombre_archivo):
         valores = linea.strip().split(',')
         x.append(float(valores[0]))
         y.append(float(valores[1]))
-    return x, y 
+    return x, y
 
 
 trayectoria1 = leer_archivo(
