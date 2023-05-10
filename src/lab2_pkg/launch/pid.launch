@@ -14,13 +14,7 @@
     <param name="Ki" value="0.0" />
     <param name="Kd" value="0.0" />
     <param name="upper_limit" value="1" />
-    <param name="lower_limit" value="-0.9" />
+    <param name="lower_limit" value="-1" />
   </node>
 
-	<include file="$(find very_simple_robot_simulator)/launch/minimal_simulator_py.launch" />
-	<include file="$(find very_simple_robot_simulator)/launch/openni_simulator_py.launch" />
-	<include file="$(find very_simple_robot_simulator)/launch/world_state.launch" />
-
-	<node pkg="lab2_pkg" name="dead_reckoning_nav" type="dead_reckoning_nav.py" output="screen" />
-    <node pkg="lab2_pkg" name="pose_loader" type="pose_loader.py" output="screen"/>
 </launch>

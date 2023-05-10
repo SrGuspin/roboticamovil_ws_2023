@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-
-  <include file="$(find sound_play)/soundplay_node.launch" />
-  <include file="$(find very_simple_robot_simulator)/launch/run_all.launch" />
-  <node pkg="lab1_pkg" name="accion_percepcion" type="accion_percepcion.py" output="screen" />
-
-</launch>
-

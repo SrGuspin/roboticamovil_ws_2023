@@ -1,0 +1,4 @@
+<launch>
+	<node pkg="lab2_pkg" name="turtlebot" type="movimientoPID.py" output="screen" />
+    <node pkg="lab2_pkg" name="pose_loader" type="pose_loader.py" output="screen"/>
+</launch>

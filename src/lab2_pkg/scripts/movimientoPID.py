@@ -22,7 +22,7 @@ def getAngle(a, b, c):
     return ang
 
 
-class Movement(object):
+class TurtleBot(object):
 
     def __init__(self):
         self.max_w = 1.0  # [rad/s]
@@ -32,7 +32,7 @@ class Movement(object):
         self.lineal = 0
         self.angular = 0
         self.eje = False
-        rospy.init_node('dead_reckoning_nav')
+        rospy.init_node('turtlebot')
         self.cmd_vel_mux_pub = rospy.Publisher(
             '/yocs_cmd_vel_mux/input/navigation', Twist, queue_size=10)
         self.rate_hz = 10
@@ -121,13 +121,13 @@ class Movement(object):
         self.eje = True
         self.ang_set_point.publish(primero_mov[1])
         self.lin_set_point.publish(primero_mov[0])
+        rospy.sleep(5)
 
         self.ang_set_point.publish(segundo_mov[1])
-        self.lin_set_point.publish(segundo_mov[0])
+        rospy.sleep(5)
 
         self.eje = False
         self.lin_set_point.publish(tercero_mov[0])
-        rospy.logerr(123123123123)
 
     # Funcion del nivel 3
 
@@ -143,7 +143,7 @@ class Movement(object):
 
 if __name__ == '__main__':
 
-    mic = Movement()
+    mic = TurtleBot()
     mic.x = 0
     mic.y = 0
     mic.yaw = 0
