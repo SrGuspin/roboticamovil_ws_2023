@@ -29,8 +29,8 @@ class TurtleBot(object):
         self.max_v = 0.2  # [m/s]
         self.factor_correcion_1 = 1.1
         self.factor_correcion_2 = 1.01
-        self.lineal = 0
-        self.angular = 0
+        self.lineal_speed = 0
+        self.angular_speed = 0
         self.eje = False
         rospy.init_node('turtlebot')
         self.cmd_vel_mux_pub = rospy.Publisher(
@@ -74,10 +74,10 @@ class TurtleBot(object):
     # Funcion del nivel 1.
 
     def velocidad_angular(self, data):
-        self.angular = float(data.data)
+        self.angular_speed = float(data.data)
 
     def velocida_lineal(self, data):
-        self.lineal = float(data.data)
+        self.lineal_speed = float(data.data)
 
     def aplicar_velocidad(self):
         speed = Twist()
@@ -103,8 +103,8 @@ class TurtleBot(object):
             self.lineal_state.publish(self.y)
         speed = Twist()
         if not rospy.is_shutdown():
-            speed.linear.x = self.lineal
-            speed.angular.z = self.angular
+            speed.linear.x = self.lineal_speed
+            speed.angular.z = self.angular_speed
             self.cmd_vel_mux_pub.publish(speed)
             self.rate_obj.sleep()
 
@@ -116,18 +116,32 @@ class TurtleBot(object):
         primero_mov = (goal_pose[0], 0)
         segundo_mov = (0, goal_pose[2])
         tercero_mov = (goal_pose[1], 0)
+
         lista_desplazamientos = [primero_mov, segundo_mov, tercero_mov]
+        # frente = (self.x+0.1*np.cos(self.yaw), self.y+0.1*np.sin(self.yaw))
+        # angulo = getAngle(frente, (self.x, self.y), (primero_mov[0], 0))
+        # TODO: Escribirle un correo al profe preguntando por si es necesario asignar
+        # otras posiciones, es decir, si se tiene que mover como un cuadrado o
+        # basta con que llegue a un solo punto.
 
         self.eje = True
         self.ang_set_point.publish(primero_mov[1])
         self.lin_set_point.publish(primero_mov[0])
-        rospy.sleep(5)
-
+        while round(self.lineal_speed, 3) != 0:
+            rospy.sleep(0.2)
+        print(1)
         self.ang_set_point.publish(segundo_mov[1])
-        rospy.sleep(5)
+        rospy.sleep(0.3)
+        while round(self.angular_speed, 3) != 0:
+            rospy.sleep(0.2)
+        print(2)
 
         self.eje = False
         self.lin_set_point.publish(tercero_mov[0])
+        rospy.sleep(0.3)
+        while round(self.lineal_speed, 3) != 0:
+            rospy.sleep(0.2)
+        print(3)
 
     # Funcion del nivel 3
 
