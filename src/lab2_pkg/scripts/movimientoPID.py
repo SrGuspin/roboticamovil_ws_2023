@@ -31,6 +31,7 @@ class TurtleBot(object):
         self.factor_correcion_2 = 1.01
         self.lineal_speed = 0
         self.angular_speed = 0
+        self.pos = 0
         self.eje = False
         rospy.init_node('turtlebot')
         self.cmd_vel_mux_pub = rospy.Publisher(
@@ -68,8 +69,12 @@ class TurtleBot(object):
             rospy.sleep(0.2)
         while self.ang_set_point.get_num_connections() == 0 and not rospy.is_shutdown():
             rospy.sleep(0.2)
+        self.ang_set_point.publish(0)
+        self.lin_set_point.publish(0)
+
         self.mover_sub = rospy.Subscriber(
             '/goal_list', PoseArray, self.accion_mover_cb)
+        rospy.sleep(0.2)
 
     # Funcion del nivel 1.
 
@@ -79,13 +84,41 @@ class TurtleBot(object):
     def velocida_lineal(self, data):
         self.lineal_speed = float(data.data)
 
-    def aplicar_velocidad(self):
-        speed = Twist()
-        while not rospy.is_shutdown():
-            speed.linear.x = self.lineal
-            speed.angular.z = self.angular
-            self.cmd_vel_mux_pub.publish(speed)
-            self.rate_obj.sleep()
+    def aplicar_velocidad(self, displacement_list):
+        for i, displacement in enumerate(displacement_list):
+            if i == 1:
+                print(1)
+                self.eje = True
+                self.pos = self.x
+                dist = abs(self.x) + abs(displacement[0])
+                self.lin_set_point.publish(dist)
+                condicional = True
+            elif i == 3:
+                self.eje = False
+                self.pos = self.y
+                dist = abs(self.y) + abs(displacement[0])
+                self.lin_set_point.publish(dist)
+                condicional = True
+                print(2)
+            else:
+                self.ang_set_point.publish(displacement[1])
+                condicional = False
+                print(3)
+
+            rospy.sleep(0.5)
+            speed = Twist()
+            while True:
+                if not condicional:
+                    speed.linear.x = 0
+                    if round(self.angular_speed, 3) == 0:
+                        break
+                else:
+                    speed.linear.x = self.lineal_speed
+                    if round(self.lineal_speed, 4) == 0:
+                        break
+                speed.angular.z = self.angular_speed
+                self.cmd_vel_mux_pub.publish(speed)
+                self.rate_obj.sleep()
 
     def odometry_cb(self, odom):
         self.x = odom.pose.pose.position.x
@@ -98,50 +131,41 @@ class TurtleBot(object):
         self.angular_state.publish(self.yaw)
 
         if self.eje:
-            self.lineal_state.publish(self.x)
+            self.lineal_state.publish(abs(self.x - self.pos))
         else:
-            self.lineal_state.publish(self.y)
-        speed = Twist()
-        if not rospy.is_shutdown():
-            speed.linear.x = self.lineal_speed
-            speed.angular.z = self.angular_speed
-            self.cmd_vel_mux_pub.publish(speed)
-            self.rate_obj.sleep()
+            self.lineal_state.publish(abs(self.y - self.pos))
 
     # Funcion del nivel 2
 
     def mover_robot_a_destino(self, goal_pose):
         # Alinear con destino
 
-        primero_mov = (goal_pose[0], 0)
-        segundo_mov = (0, goal_pose[2])
-        tercero_mov = (goal_pose[1], 0)
+        obj_x = (goal_pose[0], 0)
+        obj_ang = (0, goal_pose[2])
+        obj_y = (goal_pose[1], 0)
 
-        lista_desplazamientos = [primero_mov, segundo_mov, tercero_mov]
-        # frente = (self.x+0.1*np.cos(self.yaw), self.y+0.1*np.sin(self.yaw))
-        # angulo = getAngle(frente, (self.x, self.y), (primero_mov[0], 0))
-        # TODO: Escribirle un correo al profe preguntando por si es necesario asignar
-        # otras posiciones, es decir, si se tiene que mover como un cuadrado o
-        # basta con que llegue a un solo punto.
+        # primer movimiento por eje eje x
+        # ajustar hacia direccion del objetivo
+        frente = (self.x+np.cos(self.yaw), self.y+np.sin(self.yaw))
+        angulo = getAngle(frente, (self.x, self.y), (obj_x[0], self.y))
+        obj_aux_yaw_1 = (0, self.yaw + angulo)
+        # mover hacia eje
 
-        self.eje = True
-        self.ang_set_point.publish(primero_mov[1])
-        self.lin_set_point.publish(primero_mov[0])
-        while round(self.lineal_speed, 3) != 0:
-            rospy.sleep(0.2)
-        print(1)
-        self.ang_set_point.publish(segundo_mov[1])
-        rospy.sleep(0.3)
-        while round(self.angular_speed, 3) != 0:
-            rospy.sleep(0.2)
-        print(2)
+        # Segundo movimiento corresponde a el movimiento en el eje y
+        # Ajustar posicion
+        x = goal_pose[0]
+        frente = (x+np.cos(self.yaw), self.y+np.sin(self.yaw))
+        angulo = getAngle(frente, (x, self.y), (x, obj_y[0]))
+        obj_aux_yaw_2 = (0, self.yaw + angulo)
+        # mover hacia posicion
 
-        self.eje = False
-        self.lin_set_point.publish(tercero_mov[0])
-        rospy.sleep(0.3)
-        while round(self.lineal_speed, 3) != 0:
-            rospy.sleep(0.2)
-        print(3)
+        # calcualr diferencia de angulo
+        # angulo actual - angulo objetivo
+        # ajustar direccion angular.
+
+        displacement_list = [obj_aux_yaw_1,
+                             obj_x, obj_aux_yaw_2, obj_y, obj_ang]
+        self.aplicar_velocidad(displacement_list)
 
     # Funcion del nivel 3
 
