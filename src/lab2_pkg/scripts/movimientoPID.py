@@ -25,6 +25,20 @@ def getAngle(a, b, c):
 class TurtleBot(object):
 
     def __init__(self):
+        self.ref_lin = 0
+        self.ref_ang = 0
+        self.nombre_archivo_odom = '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/data/PI/odom_1.txt'
+        self.nombre_archivo_angulo = '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/data/PI/ang_1.txt'
+        self.nombre_archivo_linealx = '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/data/PI/linx_1.txt'
+        self.nombre_archivo_linealy = '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/data/PI/liny_1.txt'
+        with open(self.nombre_archivo_odom, 'w') as archivo:
+            archivo.write("0,0\n")
+        with open(self.nombre_archivo_angulo, 'w') as archivo:
+            archivo.write("0,0,0\n")
+        with open(self.nombre_archivo_linealx, 'w') as archivo:
+            archivo.write("0,0,0\n")
+        with open(self.nombre_archivo_linealy, 'w') as archivo:
+            archivo.write("0,0,0\n")
         self.max_w = 1.0  # [rad/s]
         self.max_v = 0.2  # [m/s]
         self.factor_correcion_1 = 1.1
@@ -74,9 +88,8 @@ class TurtleBot(object):
 
         self.mover_sub = rospy.Subscriber(
             '/goal_list', PoseArray, self.accion_mover_cb)
-        rospy.sleep(0.2)
 
-    # Funcion del nivel 1.
+        rospy.sleep(0.2)
 
     def velocidad_angular(self, data):
         self.angular_speed = float(data.data)
@@ -90,17 +103,20 @@ class TurtleBot(object):
                 print(1)
                 self.eje = True
                 self.pos = self.x
+                self.ref_lin = displacement[0]
                 dist = abs(self.x) + abs(displacement[0])
                 self.lin_set_point.publish(dist)
                 condicional = True
             elif i == 3:
                 self.eje = False
                 self.pos = self.y
+                self.ref_lin = displacement[0]
                 dist = abs(self.y) + abs(displacement[0])
                 self.lin_set_point.publish(dist)
                 condicional = True
                 print(2)
             else:
+                self.ref_ang = displacement[1]
                 self.ang_set_point.publish(displacement[1])
                 condicional = False
                 print(3)
@@ -114,7 +130,7 @@ class TurtleBot(object):
                         break
                 else:
                     speed.linear.x = self.lineal_speed
-                    if round(self.lineal_speed, 4) == 0:
+                    if round(self.lineal_speed, 5) == 0:
                         break
                 speed.angular.z = self.angular_speed
                 self.cmd_vel_mux_pub.publish(speed)
@@ -129,10 +145,25 @@ class TurtleBot(object):
                                                        odom.pose.pose.orientation.w))
         rospy.loginfo([round(self.x, 3), round(self.y, 3), round(self.yaw, 3)])
         self.angular_state.publish(self.yaw)
+        with open(self.nombre_archivo_odom, 'a') as archivo:
+            archivo.write(f"{self.x},{self.y}\n")
+        with open(self.nombre_archivo_angulo, 'a') as archivo:
+            archivo.write(
+                f"{self.ref_ang},{self.angular_speed},{self.yaw}\n")
 
         if self.eje:
+            with open(self.nombre_archivo_linealx, 'a') as archivo:
+                archivo.write(
+                    f"{self.ref_lin},{self.lineal_speed},{self.x}\n")
+            with open(self.nombre_archivo_linealy, 'a') as archivo:
+                archivo.write(f"{0},{0},{self.y}\n")
             self.lineal_state.publish(abs(self.x - self.pos))
         else:
+            with open(self.nombre_archivo_linealy, 'a') as archivo:
+                archivo.write(
+                    f"{self.ref_lin},{self.lineal_speed},{self.y}\n")
+            with open(self.nombre_archivo_linealx, 'a') as archivo:
+                archivo.write(f"{0},{0},{self.x}\n")
             self.lineal_state.publish(abs(self.y - self.pos))
 
     # Funcion del nivel 2
