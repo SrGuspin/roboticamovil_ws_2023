@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="lab2_pkg" name="reactive_movement" type="obstacle_detector.py" output="screen" />
+	<node pkg="lab2_pkg" name="turtlebot" type="obstacle_detector.py" output="screen" />
+    <node pkg="lab2_pkg" name="pose_loader" type="pose_loader.py" output="screen"/>
+</launch>

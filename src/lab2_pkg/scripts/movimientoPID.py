@@ -98,14 +98,15 @@ class TurtleBot(object):
         self.lineal_speed = float(data.data)
 
     def aplicar_velocidad(self, displacement_list):
+        # displacement_list = [obj_aux_yaw_1,obj_x, obj_aux_yaw_2, obj_y, obj_ang]
         for i, displacement in enumerate(displacement_list):
+            condicional = None
             if i == 1:
-                print(1)
                 self.eje = True
-                self.pos = self.x
+                self.pos = self.x  # posicion referencia PID, donde estoy ahora
                 self.ref_lin = displacement[0]
-                dist = abs(self.x) + abs(displacement[0])
-                self.lin_set_point.publish(dist)
+                dist = abs(self.x) + abs(displacement[0])  # a donde quiero ir
+                self.lin_set_point.publish(dist)  # referencia PID
                 condicional = True
             elif i == 3:
                 self.eje = False
@@ -114,25 +115,31 @@ class TurtleBot(object):
                 dist = abs(self.y) + abs(displacement[0])
                 self.lin_set_point.publish(dist)
                 condicional = True
-                print(2)
             else:
                 self.ref_ang = displacement[1]
                 self.ang_set_point.publish(displacement[1])
                 condicional = False
-                print(3)
-
             rospy.sleep(0.5)
-            speed = Twist()
+            speed = Twist()  # clase a la cual mandar los datos
+            contador = 0
             while True:
-                if not condicional:
-                    speed.linear.x = 0
+                if condicional is None:
+                    break
+                elif not condicional:  # condicional solo dice si es lineal o angular
+                    speed.linear.x = 0  # solo cuando está en angular
+                    # pasa salirse del caso extremo del loop
                     if round(self.angular_speed, 3) == 0:
-                        break
+                        contador += 1
+                        pass
                 else:
                     speed.linear.x = self.lineal_speed
                     if round(self.lineal_speed, 5) == 0:
-                        break
-                speed.angular.z = self.angular_speed
+                        contador += 1
+                if contador >= 25:
+                    print("break")
+                    break
+                speed.angular.z = self.angular_speed  # correciones mientras se mueve lineal
+                # manda la velocidad al kubuki
                 self.cmd_vel_mux_pub.publish(speed)
                 self.rate_obj.sleep()
 
@@ -144,7 +151,9 @@ class TurtleBot(object):
                                                        odom.pose.pose.orientation.z,
                                                        odom.pose.pose.orientation.w))
         rospy.loginfo([round(self.x, 3), round(self.y, 3), round(self.yaw, 3)])
-        self.angular_state.publish(self.yaw)
+
+        self.angular_state.publish(self.yaw)  # donde está
+
         with open(self.nombre_archivo_odom, 'a') as archivo:
             archivo.write(f"{self.x},{self.y}\n")
         with open(self.nombre_archivo_angulo, 'a') as archivo:
@@ -157,14 +166,20 @@ class TurtleBot(object):
                     f"{self.ref_lin},{self.lineal_speed},{self.x}\n")
             with open(self.nombre_archivo_linealy, 'a') as archivo:
                 archivo.write(f"{0},{0},{self.y}\n")
-            self.lineal_state.publish(abs(self.x - self.pos))
+            cosa = abs(self.x - self.pos)
+            if self.x < 0:
+                cosa *= -1
+            self.lineal_state.publish(cosa)
         else:
             with open(self.nombre_archivo_linealy, 'a') as archivo:
                 archivo.write(
                     f"{self.ref_lin},{self.lineal_speed},{self.y}\n")
             with open(self.nombre_archivo_linealx, 'a') as archivo:
                 archivo.write(f"{0},{0},{self.x}\n")
-            self.lineal_state.publish(abs(self.y - self.pos))
+            cosa = abs(self.y - self.pos)
+            if self.y < 0:
+                cosa *= -1
+            self.lineal_state.publish(cosa)
 
     # Funcion del nivel 2
 
@@ -193,7 +208,11 @@ class TurtleBot(object):
         # calcualr diferencia de angulo
         # angulo actual - angulo objetivo
         # ajustar direccion angular.
-
+        # obj_aux_yaw_1 = ajustar a la dirección del objetivo en x
+        # obj_x = cuanto se tiene que mover en x
+        # obj_aux_yaw_2 = ajustar a la dirección del objetivo en y
+        # obj_y = cuanto se tiene que mover en y
+        # obj_ang = angulo objetivo desde el inicio
         displacement_list = [obj_aux_yaw_1,
                              obj_x, obj_aux_yaw_2, obj_y, obj_ang]
         self.aplicar_velocidad(displacement_list)
@@ -207,6 +226,7 @@ class TurtleBot(object):
             y = i.position.y
             yaw = i.orientation.w
             rospy.loginfo((x, y, yaw))
+            rospy.sleep(2)
             self.mover_robot_a_destino((x, y, yaw))
 
 
