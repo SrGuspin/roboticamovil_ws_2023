@@ -197,7 +197,11 @@ class SeguidorDeObjeto(object):
         self.vector = vector
         rospy.loginfo((x, y, yaw))
         rospy.sleep(2)
-        self.mover_robot_a_destino((x, y, yaw))
+        self.mover_rob
+        if yaw == 0:
+            self.mover_robot_a_destino((0, 0, yaw))
+        else:
+            self.mover_robot_a_destino((x, y, yaw))
     
 
     def run(self):
