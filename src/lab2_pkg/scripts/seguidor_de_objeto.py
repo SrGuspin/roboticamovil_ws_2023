@@ -202,25 +202,7 @@ class SeguidorDeObjeto(object):
             self.mover_robot_a_destino((0, 0, yaw))
         else:
             self.mover_robot_a_destino((x, y, yaw))
-    
 
-    def run(self):
-        free_space = True
-        giro_der = -0.35
-        giro_izq = 0.35
-        tiempo_medio_giro = int(np.pi/giro_izq)
-        while not rospy.is_shutdown():
-            vector = self.vector
-            if vector.x == 1 and vector.z == 1:
-                self.aplicar_velocidad((0, 0, tiempo_medio_giro))
-                giro = self.detectar_imagen()
-                self.aplicar_velocidad((0, giro, tiempo_medio_giro))
-            elif vector.x == 1:
-                self.aplicar_velocidad((0.05, giro_der, tiempo_medio_giro/10))
-            elif vector.z == 1:
-                self.aplicar_velocidad((0.05, giro_izq, tiempo_medio_giro/10))
-            else:
-                self.aplicar_velocidad((0.05, 0, 1))
 
 
 if __name__ == '__main__':
