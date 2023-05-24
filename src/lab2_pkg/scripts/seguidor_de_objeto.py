@@ -22,9 +22,10 @@ def getAngle(a, b, c):
     return ang
 
 
-class TurtleBot(object):
+class SeguidorDeObjeto(object):
 
     def __init__(self):
+        rospy.init_node('seguidor_de_objeto')
         self.ref_lin = 0
         self.ref_ang = 0
         self.lineal_speed = 0.2
@@ -220,7 +221,7 @@ class TurtleBot(object):
 
 if __name__ == '__main__':
 
-    mic = TurtleBot()
+    mic = SeguidorDeObjeto()
     mic.x = 0
     mic.y = 0
     mic.yaw = 0
