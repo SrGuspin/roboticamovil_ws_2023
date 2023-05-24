@@ -9,6 +9,7 @@ import numpy as np
 
 class BlueSquareDetector:
     def __init__(self):
+        rospy.init_node('blue_square_position')
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber('/camera/rgb/image_color', Image, self.image_callback)
         self.blue_square_pub = rospy.Publisher('/blue_square_position', Vector3, queue_size=10)
@@ -79,7 +80,6 @@ class BlueSquareDetector:
 
     def run(self):
         while not rospy.is_shutdown():
-
             rospy.spin()
 
 if __name__ == '__main__':

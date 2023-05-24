@@ -1,0 +1,24 @@
+<launch>
+
+    <include file="$(find very_simple_robot_simulator)/launch/minimal_simulator_py.launch" />
+	<include file="$(find very_simple_robot_simulator)/launch/openni_simulator_py.launch" />
+	<include file="$(find very_simple_robot_simulator)/launch/world_state.launch" />
+    
+	<node pkg="lab2_pkg" name="blue_square_position" type="detector_de_objetos.py" output="screen" />
+    <node pkg="lab2_pkg" name="seguidor_de_objeto" type="seguidor_de_objeto.py" output="screen"/>
+
+    <node name="dist_ctrl" pkg="pid" type="controller" ns="robot_angular">
+        <param name="Kp" value="0.6" />
+        <param name="Kp_scale" value="10.0" />
+        <param name="Ki" value="0.0" />
+        <param name="Ki_scale" value="0.0" />
+        <param name="Kd" value="0.0" />
+        <param name="upper_limit" value="1" />
+        <param name="lower_limit" value="-1" />
+    </node>
+  
+  <!-- <node name="rqt_plot" pkg="rqt_plot" type="rqt_plot" 
+    args="/robot_lineal/control_effort /robot_lineal/state /robot_lineal/setpoint" />
+  <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"/> -->
+
+</launch>
