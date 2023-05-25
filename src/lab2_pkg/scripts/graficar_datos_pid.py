@@ -16,9 +16,9 @@ def leer_archivo(nombre_archivo):
 
 
 trayectoria1 = leer_archivo(
-    'workspace/src/lab2_pkg/data/PI/linx_4.txt')
+    'workspace/src/lab2_pkg/data/P/linx_1.txt')
 trayectoria2 = leer_archivo(
-    'workspace/src/lab2_pkg/data/PI/liny_4.txt')
+    'workspace/src/lab2_pkg/data/P/liny_1.txt')
 
 plt.plot(trayectoria1[0], color='r', label='ref_x')
 plt.plot(trayectoria1[1], color='g', label='vel_x')

@@ -14,15 +14,15 @@ def leer_archivo(nombre_archivo):
 
 
 trayectoria1 = leer_archivo(
-    'workspace/src/lab2_pkg/data/P/odom_1.txt')
+    'workspace/src/lab2_pkg/data/PI/odom_1.txt')
 trayectoria2 = leer_archivo(
-    'workspace/src/lab2_pkg/data/P/odom_1.txt')
+    'workspace/src/lab2_pkg/data/PI/odom_2.txt')
 trayectoria3 = leer_archivo(
-    'workspace/src/lab2_pkg/data/P/odom_1.txt')
+    'workspace/src/lab2_pkg/data/PI/odom_3.txt')
 trayectoria4 = leer_archivo(
-    'workspace/src/lab2_pkg/data/P/odom_1.txt')
+    'workspace/src/lab2_pkg/data/PI/odom_4.txt')
 trayectoria5 = leer_archivo(
-    'workspace/src/lab2_pkg/data/P/odom_1.txt')
+    'workspace/src/lab2_pkg/data/PI/odom_5.txt')
 
 trayectorias = [trayectoria1, trayectoria2,
                 trayectoria3, trayectoria4, trayectoria5]
@@ -30,8 +30,8 @@ colores = ['red', 'blue', 'green', 'orange', 'purple']
 puntos = [(0, 0), (1, 0), (1, 1), (0, 1)]
 
 plt.figure(figsize=(8, 8))
-plt.xlim(-1, 3)
-plt.ylim(-1, 3)
+plt.xlim(-1, 2)
+plt.ylim(-1, 2)
 for i, trayectoria in enumerate(trayectorias):
     plt.plot(trayectoria[0], trayectoria[1],
              color=colores[i], label=f'Trayectoria {i}')

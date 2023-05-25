@@ -38,10 +38,8 @@ class SeguidorDeObjeto(object):
         self.rate_hz = 10
         self.rate_obj = rospy.Rate(self.rate_hz)
 
-
         # Lectura odometria
         self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odometry_cb)
-
 
         # ESTADOS PID
         self.ang_set_point = rospy.Publisher(
@@ -52,15 +50,6 @@ class SeguidorDeObjeto(object):
 
         self.ang_actuation = rospy.Subscriber(
             '/robot_angular/control_effort', Float64, self.velocidad_angular)
-
-        self.lin_set_point = rospy.Publisher(
-            '/robot_lineal/setpoint', Float64, queue_size=1)
-
-        self.lineal_state = rospy.Publisher(
-            '/robot_lineal/state', Float64, queue_size=1)
-
-        self.lin_actuation = rospy.Subscriber(
-            '/robot_lineal/control_effort', Float64, self.velocida_lineal)
 
         while self.lin_set_point.get_num_connections() == 0 and not rospy.is_shutdown():
             rospy.sleep(0.2)
@@ -73,44 +62,22 @@ class SeguidorDeObjeto(object):
         self.ang_set_point.publish(0)
         self.lin_set_point.publish(0)
 
-
         self.mover_sub = rospy.Subscriber(
             '/blue_square_position', Vector3(), self.accion_mover_cb)
-        
+
         rospy.sleep(0.2)
-
-
 
     def velocidad_angular(self, data):
         self.angular_speed = float(data.data)
-
-
-
-    def velocida_lineal(self, data):
-        self.lineal_speed = float(data.data)
-
-
 
     def aplicar_velocidad(self, displacement_list):
         # displacement_list = [obj_aux_yaw_1,obj_x, obj_aux_yaw_2, obj_y, obj_ang]
         for i, displacement in enumerate(displacement_list):
             condicional = None
             if i == 1:
-                self.eje = True
-                self.pos = self.x  # posicion referencia PID, donde estoy ahora
-                self.ref_lin = displacement[0]
-                dist = abs(self.x) + abs(displacement[0])  # a donde quiero ir
-                self.lin_set_point.publish(dist)  # referencia PID
-                condicional = True
-            elif i == 3:
-                self.eje = False
-                self.pos = self.y
-                self.ref_lin = displacement[0]
-                dist = abs(self.y) + abs(displacement[0])
-                self.lin_set_point.publish(dist)
+                self.lineal_speed = 0.2
                 condicional = True
             else:
-                self.ref_ang = displacement[1]
                 self.ang_set_point.publish(displacement[1])
                 condicional = False
             rospy.sleep(0.5)
@@ -121,14 +88,13 @@ class SeguidorDeObjeto(object):
                     break
                 elif not condicional:  # condicional solo dice si es lineal o angular
                     speed.linear.x = 0  # solo cuando está en angular
-                    # pasa salirse del caso extremo del loop
                     if round(self.angular_speed, 3) == 0:
                         contador += 1
                         pass
                 else:
                     speed.linear.x = self.lineal_speed
-                    if round(self.lineal_speed, 5) == 0:
-                        contador += 1
+                    if abs(self.x - displacement[0]) <= 0.2:
+                        break
                 if contador >= 25:
                     print("break")
                     break
@@ -137,38 +103,26 @@ class SeguidorDeObjeto(object):
                 self.cmd_vel_mux_pub.publish(speed)
                 self.rate_obj.sleep()
 
-
-
     def odometry_cb(self, odom):
         self.x = odom.pose.pose.position.x
         self.y = odom.pose.pose.position.y
         roll, pitch, self.yaw = euler_from_quaternion((odom.pose.pose.orientation.x,
-                                                    odom.pose.pose.orientation.y,
-                                                    odom.pose.pose.orientation.z,
-                                                    odom.pose.pose.orientation.w))
+                                                       odom.pose.pose.orientation.y,
+                                                       odom.pose.pose.orientation.z,
+                                                       odom.pose.pose.orientation.w))
         rospy.loginfo([round(self.x, 3), round(self.y, 3), round(self.yaw, 3)])
+        if self.yaw < 0:
+            self.yaw += 2*np.pi
         self.angular_state.publish(self.yaw)  # donde está
-        if self.eje:
-            cosa = abs(self.x - self.pos)
-            if self.x < 0:
-                cosa *= -1
-            self.lineal_state.publish(cosa)
-        else:
-            cosa = abs(self.y - self.pos)
-            if self.y < 0:
-                cosa *= -1
-            self.lineal_state.publish(cosa)
-
-
 
     def distancia_blue_square(self, pos_blue_square_x):
-        if (2 * (pos_blue_square_x) * math.tan(0.523599)) != 0: # si sabemos que el lado del cuadrado son 15 cm, entonces podemos calcular la distancia del robot al cuadrado azul, la camara tiene 57° de angulo de vision horizontal:
-            distancia = (14 * 640) / (2 * (pos_blue_square_x) * math.tan(0.523599))
+        # si sabemos que el lado del cuadrado son 15 cm, entonces podemos calcular la distancia del robot al cuadrado azul, la camara tiene 57° de angulo de vision horizontal:
+        if (2 * (pos_blue_square_x) * math.tan(0.523599)) != 0:
+            distancia = (14 * 640) / \
+                (2 * (pos_blue_square_x) * math.tan(0.523599))
         else:
             distancia = 0
         return distancia
-
-
 
     def accion_mover_cb(self, vector):
         # recibe unicamente el punto en donde esta el cubo azul.
@@ -177,7 +131,7 @@ class SeguidorDeObjeto(object):
         pos_blue_square_x = vector.x
         angulo_blue_square = vector.z
         distancia_obj = self.distancia_blue_square(pos_blue_square_x)
-        angulo_obj = self.yaw + angulo_blue_square 
+        angulo_obj = self.yaw + angulo_blue_square
         if x == 0:
             self.position_x = True
         if not self.position_x:
@@ -188,12 +142,11 @@ class SeguidorDeObjeto(object):
             self.aplicar_velocidad([angulo_obj, distancia_obj])
 
 
-
 if __name__ == '__main__':
 
     mic = SeguidorDeObjeto()
     mic.x = 0
     mic.y = 0
     mic.yaw = 0
-    mic.vector = Vector3(0,0,0)
+    mic.vector = Vector3(0, 0, 0)
     rospy.spin()
