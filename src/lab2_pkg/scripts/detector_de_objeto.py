@@ -10,7 +10,7 @@ import math
 
 class BlueSquareDetector:
     def __init__(self):
-        rospy.init_node('blue_square_position')
+        rospy.init_node('detector_de_objeto')
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber('/camera/rgb/image_color', Image, self.rgb_image_callback)
         self.blue_square_pub = rospy.Publisher('/blue_square_position', Vector3, queue_size=10)
@@ -82,11 +82,11 @@ class BlueSquareDetector:
                 position_x = cX - center_x
 
 
-                ##################   DISTANCIA   ##################
+                """ ##################   DISTANCIA   ##################
                 if (2 * (cX - center_x) * math.tan(0.523599)) != 0: # si sabemos que el lado del cuadrado son 15 cm, entonces podemos calcular la distancia del robot al cuadrado azul, la camara tiene 57° de angulo de vision horizontal:
                     distancia = (14 * 640) / (2 * (cX - center_x) * math.tan(0.523599))
                 else:
-                    distancia = 0
+                    distancia = 0 """
                 
                 ##################   ANGULO   ##################
             angulo_yaw = np.arctan2(cX, center_x) # angulo_yaw es el ángulo de orientación del robot con respecto al cuadrado azul.
