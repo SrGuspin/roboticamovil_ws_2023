@@ -150,3 +150,5 @@ if __name__ == '__main__':
     mic.yaw = 0
     mic.vector = Vector3(0, 0, 0)
     rospy.spin()
+
+# https://stackoverflow.com/questions/35942754/how-can-i-save-username-and-password-in-git
