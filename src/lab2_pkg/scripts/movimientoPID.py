@@ -27,10 +27,10 @@ class TurtleBot(object):
     def __init__(self):
         self.ref_lin = 0
         self.ref_ang = 0
-        self.nombre_archivo_odom = '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/data/PI/odom_1.txt'
-        self.nombre_archivo_angulo = '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/data/PI/ang_1.txt'
-        self.nombre_archivo_linealx = '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/data/PI/linx_1.txt'
-        self.nombre_archivo_linealy = '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/data/PI/liny_1.txt'
+        self.nombre_archivo_odom = '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/data/PI/odom_5.txt'
+        self.nombre_archivo_angulo = '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/data/PI/ang_5.txt'
+        self.nombre_archivo_linealx = '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/data/PI/linx_5.txt'
+        self.nombre_archivo_linealy = '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/data/PI/liny_5.txt'
         with open(self.nombre_archivo_odom, 'w') as archivo:
             archivo.write("0,0\n")
         with open(self.nombre_archivo_angulo, 'w') as archivo:
@@ -98,7 +98,6 @@ class TurtleBot(object):
         for i, displacement in enumerate(displacement_list):
             condicional = None
             if i == 1:
-                print("XXXXXXXXXXXXXXXXXXXXX")
                 self.eje = True
                 self.pos = self.x  # posicion referencia PID, donde estoy ahora
                 self.ref_lin = displacement[0]
@@ -106,7 +105,6 @@ class TurtleBot(object):
                 self.lin_set_point.publish(dist)  # referencia PID
                 condicional = True
             elif i == 3:
-                print("YYYYYYYYYYYYYYYYYYYYY")
                 self.eje = False
                 self.pos = self.y
                 self.ref_lin = displacement[0]
@@ -131,18 +129,17 @@ class TurtleBot(object):
                     # pasa salirse del caso extremo del loop
                     if round(self.angular_speed, 2) == 0:
                         contador += 1
-                        print(1)
                         pass
                 else:
                     speed.linear.x = self.lineal_speed
-                    if round(self.lineal_speed, 3) == 0:
+                    if round(self.lineal_speed, 2) == 0:
                         contador += 1
-                        print(2)
                 if contador >= 25:
-                    print("break")
+                    rospy.loginfo("break!")
                     break
                 speed.angular.z = self.angular_speed  # correciones mientras se mueve lineal
                 # manda la velocidad al kubuki
+                # rospy.logerr([speed.angular.z, speed.linear.x])
                 self.cmd_vel_mux_pub.publish(speed)
                 self.rate_obj.sleep()
 
@@ -227,7 +224,7 @@ class TurtleBot(object):
             y = i.position.y
             yaw = i.orientation.w
             rospy.loginfo((x, y, yaw))
-            rospy.sleep(2)
+            rospy.sleep(0.5)
             self.mover_robot_a_destino((x, y, yaw))
 
 

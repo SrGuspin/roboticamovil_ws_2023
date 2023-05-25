@@ -135,18 +135,15 @@ class TurtleBot(object):
                                                        odom.pose.pose.orientation.z,
                                                        odom.pose.pose.orientation.w))
         rospy.loginfo([round(self.x, 3), round(self.y, 3), round(self.yaw, 3)])
-
-        self.angular_state.publish(self.yaw)  # donde está
+        if self.yaw < 0:
+            self.yaw = self.yaw + 2*np.pi
+        self.angular_state.publish(self.yaw)
 
         if self.eje:
             cosa = abs(self.x - self.pos)
-            if self.x < 0:
-                cosa *= -1
             self.lineal_state.publish(cosa)
         else:
             cosa = abs(self.y - self.pos)
-            if self.y < 0:
-                cosa *= -1
             self.lineal_state.publish(cosa)
 
     # Funcion del nivel 2

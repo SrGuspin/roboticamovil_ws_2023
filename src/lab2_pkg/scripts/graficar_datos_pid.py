@@ -7,7 +7,7 @@ def leer_archivo(nombre_archivo):
     x = []
     y = []
     z = []
-    for linea in lineas:
+    for linea in lineas[0:700]:
         valores = linea.strip().split(',')
         x.append(float(valores[0]))
         y.append(float(valores[1]))
@@ -16,12 +16,16 @@ def leer_archivo(nombre_archivo):
 
 
 trayectoria1 = leer_archivo(
-    'workspace/src/lab2_pkg/data/PI/linx_1.txt')
+    'workspace/src/lab2_pkg/data/PI/linx_4.txt')
+trayectoria2 = leer_archivo(
+    'workspace/src/lab2_pkg/data/PI/liny_4.txt')
 
-
-plt.plot(trayectoria1[0], color='r', label='ref')
-plt.plot(trayectoria1[1], color='g', label='vel')
-plt.plot(trayectoria1[2], color='b', label='real')
+plt.plot(trayectoria1[0], color='r', label='ref_x')
+plt.plot(trayectoria1[1], color='g', label='vel_x')
+plt.plot(trayectoria1[2], color='b', label='real_x')
+plt.plot(trayectoria2[0], color='black', label='ref_y')
+plt.plot(trayectoria2[1], color='y', label='vel_y')
+plt.plot(trayectoria2[2], color='m', label='real_y')
 
 
 plt.legend()
