@@ -1,19 +1,7 @@
 <launch>
-
-    <include file="$(find very_simple_robot_simulator)/launch/minimal_simulator_py.launch" />
-	<include file="$(find very_simple_robot_simulator)/launch/openni_simulator_py.launch" />
-	<include file="$(find very_simple_robot_simulator)/launch/world_state.launch" />
     
-	<node pkg="lab2_pkg" name="blue_square_position" type="detector_de_objetos.py" output="screen" />
+	<node pkg="lab2_pkg" name="detector_de_objeto" type="detector_de_objeto.py" output="screen" />
     <node pkg="lab2_pkg" name="seguidor_de_objeto" type="seguidor_de_objeto.py" output="screen"/>
-
-    <node name="dist_ctrl" pkg="pid" type="controller" ns="robot_lineal">
-        <param name="Kp" value="0.0" />
-        <param name="Ki" value="0.0" />
-        <param name="Kd" value="0.0" />
-        <param name="upper_limit" value="0.2" />
-        <param name="lower_limit" value="0.2" />
-    </node>
 
     <node name="dist_ctrl" pkg="pid" type="controller" ns="robot_angular">
         <param name="Kp" value="0.5" />

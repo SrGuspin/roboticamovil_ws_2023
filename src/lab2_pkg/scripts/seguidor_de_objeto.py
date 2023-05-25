@@ -51,19 +51,14 @@ class SeguidorDeObjeto(object):
         self.ang_actuation = rospy.Subscriber(
             '/robot_angular/control_effort', Float64, self.velocidad_angular)
 
-        while self.lin_set_point.get_num_connections() == 0 and not rospy.is_shutdown():
-            rospy.sleep(0.2)
         while self.angular_state.get_num_connections() == 0 and not rospy.is_shutdown():
-            rospy.sleep(0.2)
-        while self.lineal_state.get_num_connections() == 0 and not rospy.is_shutdown():
             rospy.sleep(0.2)
         while self.ang_set_point.get_num_connections() == 0 and not rospy.is_shutdown():
             rospy.sleep(0.2)
         self.ang_set_point.publish(0)
-        self.lin_set_point.publish(0)
 
         self.mover_sub = rospy.Subscriber(
-            '/blue_square_position', Vector3(), self.accion_mover_cb)
+            '/blue_square_position', Vector3, self.accion_mover_cb)
 
         rospy.sleep(0.2)
 
@@ -78,7 +73,7 @@ class SeguidorDeObjeto(object):
                 self.lineal_speed = 0.2
                 condicional = True
             else:
-                self.ang_set_point.publish(displacement[1])
+                self.ang_set_point.publish(abs(displacement[1]))
                 condicional = False
             rospy.sleep(0.5)
             speed = Twist()  # clase a la cual mandar los datos
@@ -132,7 +127,7 @@ class SeguidorDeObjeto(object):
         angulo_blue_square = vector.z
         distancia_obj = self.distancia_blue_square(pos_blue_square_x)
         angulo_obj = self.yaw + angulo_blue_square
-        if x == 0:
+        if pos_blue_square_x == 0:
             self.position_x = True
         if not self.position_x:
             rospy.loginfo((0, 0, angulo_obj))
