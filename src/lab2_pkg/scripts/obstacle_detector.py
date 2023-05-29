@@ -63,8 +63,10 @@ class TurtlebotController(object):
         self.rate_obj = rospy.Rate(self.rate_hz)
         # rospy.init_node('turtlebot')
 
+        # self.depth_img_sub = rospy.Subscriber(
+        #     '/camera/depth/image_raw', Image, self.depth_image_cb)
         self.depth_img_sub = rospy.Subscriber(
-            '/camera/depth/image_raw', Image, self.depth_image_cb)
+            '/camera_depth/image', Image, self.depth_image_cb, queue_size=3)
         self.rgb_img_sub = rospy.Subscriber(
             '/camera/rgb/image_color', Image, self.rgb_image_cb)
         self.cmd_vel_pub = rospy.Publisher(
@@ -103,6 +105,7 @@ class TurtlebotController(object):
         try:
             self.depth_image_np = self.bridge.imgmsg_to_cv2(msg)
             self.vector = self.obtacle_detected()
+            self.rate_obj.sleep()
         except CvBridgeError as e:
             rospy.logerr(e)
 
@@ -132,15 +135,35 @@ class TurtlebotController(object):
             columna2 = np.where(np.isnan(columna2), 0.0, columna2)
             columna3 = np.where(np.isnan(columna3), 0.0, columna3)
 
-            obstacle1 = np.any(columna1 < 0.5)
-            obstacle2 = np.any(columna2 < 0.5)
-            obstacle3 = np.any(columna3 < 0.5)
+            obstacle1 = np.mean(columna1)
+            obstacle2 = np.mean(columna2)
+            obstacle3 = np.mean(columna3)
+
+            if obstacle1 < 0.1:
+                obstacle1 = 1
+            else:
+                obstacle1 = 0
+
+            if obstacle2 < 0.1:
+                obstacl2 = 1
+            else:
+                obstacle2 = 0
+
+            if obstacle3 < 0.1:
+                obstacle = 1
+            else:
+                obstacle3 = 0
+            # obstacle1 = np.mean(columna1 < 0.1)
+            # obstacle2 = np.mean(columna2 < 0.1)
+            # obstacle3 = np.mean(columna3 < 0.1)
             columnas = Vector3(columna1, columna2, columna3)
+            columna3 = 0.057
             self.centro_tunel = (np.mean(columna3) -
                                  np.mean(columna1))/2  # - 1.25
             self.pos_vs_centro = self.y - self.centro_tunel
             rospy.loginfo('columna1: %f' % np.mean(columna1))
-            rospy.loginfo('columna2: %f' % np.mean(columna3))
+            rospy.loginfo('columna2: %f' % np.mean(columna2))
+            rospy.loginfo('columna3: %f' % np.mean(columna3))
             rospy.loginfo('centro tunel: %f' % self.centro_tunel)
             rospy.loginfo('diferencia a referencia: %f' % self.pos_vs_centro)
 
@@ -182,10 +205,10 @@ class TurtlebotController(object):
         speed = Twist()
 
         while not rospy.is_shutdown():  # CONDICIONES
+            self.run()
             speed.linear.x = self.velocidad_lineal
             speed.angular.z = self.angular_speed
             self.cmd_vel_pub.publish(speed)
-            self.run()
             self.rate_obj.sleep()
 
     def run(self):
@@ -196,8 +219,8 @@ class TurtlebotController(object):
 
         rospy.loginfo([vector.x, vector.y, vector.z])
 
-        if (vector.x == 1 and vector.z == 1) or self.fin:
-            if self.i < 60:
+        if (vector.y == 1) or self.fin:
+            if self.i < 70:
                 self.i += 1
                 self.velocidad_lineal = 0
                 self.fin = True
