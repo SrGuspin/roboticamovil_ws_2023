@@ -123,7 +123,7 @@ class TurtleBot(object):
                     print("break")
                     break
                 speed.angular.z = self.angular_speed  # correciones mientras se mueve lineal
-                # manda la velocidad al kubuki
+                # manda la velocidad al kobuki
                 self.cmd_vel_mux_pub.publish(speed)
                 self.rate_obj.sleep()
 
