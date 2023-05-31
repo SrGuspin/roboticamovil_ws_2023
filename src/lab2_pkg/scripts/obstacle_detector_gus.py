@@ -101,9 +101,9 @@ class TurtlebotController(object):
     def obtacle_detected(self, data):
 
         if self.depth_image_np is not None:
-            columna1 = self.depth_image_np[:, 0]
-            columna2 = self.depth_image_np[:, 320]
-            columna3 = self.depth_image_np[:, 639]
+            columna1 = self.depth_image_np[0:213]
+            columna2 = self.depth_image_np[213:426]
+            columna3 = self.depth_image_np[426:640]
 
             columna1 = np.where(np.isnan(columna1), 0.0, columna1)
             columna2 = np.where(np.isnan(columna2), 0.0, columna2)
@@ -116,11 +116,17 @@ class TurtlebotController(object):
             columnas = Vector3(obstacle1, obstacle2, obstacle3)
             rospy.loginfo([obstacle1, obstacle2, obstacle3])
 
-            # 18 grados por seccion
+            # 27 grados por seccion
+            # cambiar, creo que deberian de ser 17
             grad18 = np.deg2rad(27)
             obj = self.yaw
             if not self.fin:
-                if obstacle2 < 1.5 or (obstacle1 == 0.0 and obstacle2 == 0.0):
+                # parametro a cambiar = dist: define la distancia hasta el frente que activa
+                # la deteccion de flecha.
+                # el and esta para cuando no detecte nada a los lados, cuando sea nan.
+
+                dist = 0.8
+                if obstacle2 < dist or (obstacle1 == 0.0 and obstacle2 == 0.0):
                     self.velocidad_lineal = 0
                     giro = self.detectar_imagen()
                     obj = np.deg2rad(giro) + self.yaw
@@ -130,7 +136,7 @@ class TurtlebotController(object):
                     obj = self.yaw - grad18
                 elif obstacle3 < obstacle1:
                     obj = self.yaw + grad18
-                self.center_set_point.publish(obj)
+            self.center_set_point.publish(obj)
 
     def aplicar_velocidad(self):
         speed = Twist()
