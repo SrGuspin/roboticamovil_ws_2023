@@ -20,7 +20,7 @@ class BlueSquareDetector:
             '/blue_square_position', Vector3, queue_size=1)
         self.depth_image_np = None
         self.cv_image = None
-        self.rate_hz = 10
+        self.rate_hz = 3
         self.rate_obj = rospy.Rate(self.rate_hz)
         self.vector = Vector3(0, 0, 0)
         rgba_color = np.uint8([[[83, 134, 217]]])
@@ -30,20 +30,9 @@ class BlueSquareDetector:
         self.lower_blue = np.array([hsv_color[0][0][0] - 10, 100, 100])
         self.upper_blue = np.array([hsv_color[0][0][0] + 10, 255, 255])
 
-        ######### CAMARA DE PROFUNDIDAD #########
-    """ def depth_image_cb(self, msg):
-        try:
-            self.depth_image_np = self.bridge.imgmsg_to_cv2(msg)
-            self.vector = self.blue_square_depht()
-        except CvBridgeError as e:
-            rospy.logerr(e)
-
-    def blue_square_depht(self, blue_square_contour):
-        if self.depth_image_np is not None: #compara la imagen de profundidad con la del cuadrado azul para definir la distancia del robot al cuadrado. hazlo comparando los pixeles de la imagen de profundidad con los pixeles de la imagen del cuadrado azul y viendo si los del cuadrado azul tienen la misma profundida, para poder diferenciar de algun otro objeto azul que pueda haber en la imagen. Hazlo con un for que recorra la imagen de profundidad y que compare los pixeles de la imagen de profundidad con los pixeles de la imagen del cuadrado azul y viendo si los del cuadrado azul tienen la misma profundida, para poder diferenciar de algun otro objeto azul que pueda haber en la imagen
-            for i in range(self.depth_image_np.shape[0]):
-                for j in range(self.depth_image_np.shape[1]):
-                    if self.depth_image_np[i][j] == blue_square_contour[i][j]:
-                        return self.depth_image_np[i][j] #devuelve la distancia del robot al cuadrado azul """
+        self.curr_time = 0.0
+        self.period = 1/3
+        rospy.Timer(rospy.Duration(self.period), self.detector_de_cubo)
 
     def rgb_image_callback(self, msg):
         try:
@@ -52,6 +41,7 @@ class BlueSquareDetector:
             rospy.logerr(e)
             return e
 
+    def detector_de_cubo(self, data):
         # Transformar la imagen al espacio de color HSV
         hsv_image = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2HSV)
 
@@ -93,7 +83,6 @@ class BlueSquareDetector:
         else:
             position_msg = Vector3(0, 0, 1)
             self.blue_square_pub.publish(position_msg)
-        self.rate_obj.sleep()
         # rospy.loginfo("Blue square position: {}".format(position_msg.z))
 
         # if blue_square_contour is not None:  # Calcular la posición horizontal x del cuadrado azul con respecto al centro de la imagen

@@ -1,11 +1,6 @@
 <launch>
-
-    <include file="$(find very_simple_robot_simulator)/launch/minimal_simulator_py.launch" />
-	<include file="$(find very_simple_robot_simulator)/launch/openni_simulator_py.launch" />
-	<include file="$(find very_simple_robot_simulator)/launch/world_state.launch" />
     
-	<!-- <node pkg="lab2_pkg" name="turtlebot" type="obstacle_detector_copy2.py" output="screen" /> -->
-    <node pkg="lab2_pkg" name="pose_loader" type="pose_loader.py" output="screen"/>
+	<node pkg="lab2_pkg" name="reactive_movement" type="obstacle_detector_gus.py" output="screen" />
 
 
     <node name="dist_ctrl" pkg="pid" type="controller" ns="robot_angular">

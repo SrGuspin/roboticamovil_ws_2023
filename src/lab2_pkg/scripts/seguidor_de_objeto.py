@@ -66,7 +66,6 @@ class SeguidorDeObjeto(object):
         self.angular_speed = float(data.data)
 
     def aplicar_velocidad(self, angulo):
-        self.ang_set_point.publish(Float64(angulo))
 
         speed = Twist()  # clase a la cual mandar los datos
         speed.linear.x = self.lineal_speed
@@ -83,8 +82,6 @@ class SeguidorDeObjeto(object):
                                                        odom.pose.pose.orientation.z,
                                                        odom.pose.pose.orientation.w))
         # rospy.loginfo([round(self.x, 3), round(self.y, 3), round(self.yaw, 3)])
-        if self.yaw < 0:
-            self.yaw += 2*np.pi
         self.angular_state.publish(self.yaw)  # donde está
 
     def distancia_blue_square(self, pos_blue_square_x):
@@ -104,16 +101,12 @@ class SeguidorDeObjeto(object):
         pos_x = vector.x
         ancho = vector.y
         mitad = ancho / 2
-        campo_visual = np.deg2rad(54)
+        campo_visual = np.deg2rad(28.5)
 
         angulo = ((campo_visual*pos_x)/mitad) - campo_visual
-        if angulo >= math.pi:
-            angulo -= 2*math.pi
-        elif angulo < -math.pi:
-            angulo += 2*math.pi
-        if angulo < 0:
-            angulo += 2*np.pi
-        rospy.loginfo(f"angulo = {np.rad2deg(angulo)}")
+        error = (-1 * angulo) + self.yaw
+
+        cosa = np.rad2deg(angulo)
 
         if vector.z == 1:
             self.lineal_speed = 0
@@ -121,18 +114,14 @@ class SeguidorDeObjeto(object):
         else:
             self.lineal_speed = 0
 
-        self.aplicar_velocidad(angulo)
-        # distancia_obj = self.distancia_blue_square(pos_blue_square_x)
-        # angulo_obj = self.yaw + angulo_blue_square
+        if not np.isnan(cosa):
+            self.ang_set_point.publish(error)
+            rospy.loginfo(f"angulo = {cosa}")
+            rospy.loginfo(f"error = {np.rad2deg(error)}")
+            rospy.loginfo(f"yaw = {np.rad2deg(self.yaw)}")
 
-        # if pos_blue_square_x == 0:
-        #     self.position_x = True
-        # if not self.position_x:
-        #     rospy.loginfo((0, 0, angulo_obj))
-        #     rospy.sleep(2)
-        #     self.aplicar_velocidad([angulo_obj])
-        # else:
-        #     self.aplicar_velocidad([angulo_obj, distancia_obj])
+            self.aplicar_velocidad(angulo)
+            rospy.sleep(1/100)
 
 
 if __name__ == '__main__':
