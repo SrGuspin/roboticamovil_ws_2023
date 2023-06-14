@@ -7,8 +7,8 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Vector3, Twist
 from tf.transformations import euler_from_quaternion
-import shapely as shp
-from shapely.geometry import LineString, Point
+# import shapely as shp
+# from shapely.geometry import LineString, Point
 
 # from turtlebot_audio import TurtlebotAudio
 
@@ -125,12 +125,14 @@ class TurtlebotController(object):
                 # la deteccion de flecha.
                 # el and esta para cuando no detecte nada a los lados, cuando sea nan.
 
-                dist = 0.8
+                dist = 800 #0.8
                 if obstacle2 < dist or (obstacle1 == 0.0 and obstacle2 == 0.0):
                     self.velocidad_lineal = 0
                     giro = self.detectar_imagen()
                     obj = np.deg2rad(giro) + self.yaw
+                    self.angular_speed = 1
                     rospy.logerr(obj)
+                    rospy.sleep(5)
                     self.fin = True
                 elif obstacle1 < obstacle3:
                     obj = self.yaw - grad18
@@ -171,72 +173,113 @@ class TurtlebotController(object):
             giro = 90
         return giro
 
+    # Función para calcular la intersección de dos líneas
+    def calcular_interseccion(self, p1, p2, q1, q2):
+        xdiff = (p1[0] - p2[0], q1[0] - q2[0])
+        ydiff = (p1[1] - p2[1], q1[1] - q2[1])
+
+        def determinante(a, b):
+            return a[0] * b[1] - a[1] * b[0]
+
+        div = determinante(xdiff, ydiff)
+        if div == 0:
+            raise Exception("Las líneas no se intersectan")
+
+        d = (determinante(*p1, *p2), determinante(*q1, *q2))
+        x = determinante(d, xdiff) / div
+        y = determinante(d, ydiff) / div
+        return x, y
+
     def detectar_flecha(self):
         # hecho por gus
         # no funciona
         # a veces detecta izquierda cuand otiene que ser derecha
         # lo mismo pasa con el codigo de la pauli pero este requiere mucho más procesamiento que
         # el de la pauli :p
+        # img = self.rgb_image_np
+        # rgba_color = np.uint8([[[144, 29, 46]]])
+        # hsv_color = cv2.cvtColor(rgba_color, cv2.COLOR_RGB2HSV)
+
+        # lower_blue = np.array([hsv_color[0][0][0] - 10, 100, 100])
+        # upper_blue = np.array([hsv_color[0][0][0] + 10, 255, 255])
+
+        # hsv_image = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+        # # Aplicar una máscara para detectar los píxeles azules
+        # mask = cv2.inRange(hsv_image, lower_blue, upper_blue)
+        # img = cv2.bitwise_and(img, img, mask=mask)
+        # img = cv2.medianBlur(img, 5)
+
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # edges = cv2.Canny(img, 50, 150, apertureSize=3)
+        # lines = cv2.HoughLines(edges, 1, np.pi/360, 60)
+
+        # extremo = None
+        # inicio = None
+        # punta = None
+        # horizontal = []
+        # diag = []
+        # for line in lines:
+        #     rho, theta = line[0]
+        #     a = np.cos(theta)
+        #     b = np.sin(theta)
+        #     x0 = a*rho
+        #     y0 = b*rho
+        #     x1 = int(x0 + 1000*(-b))
+        #     y1 = int(y0 + 1000*(a))
+        #     x2 = int(x0 - 1000*(-b))
+        #     y2 = int(y0 - 1000*(a))
+
+        #     if x2 - x1 == 0:
+        #         pendiente = 0
+        #     elif y2 - y1 == 0:
+        #         pendiente = 0
+        #     else:
+        #         pendiente = round((y2-y1)/(x2-x1))
+        #     if pendiente == 0:
+        #         horizontal.append(((x1, y1), (x2, y2)))
+        #     else:
+        #         diag.append(((x1, y1), (x2, y2)))
+
+        # # diag_sorted = sorted(diag, key=lambda x: x[1][1])
+
+        # # linea_1 = LineString(diag_sorted[0])
+        # # linea_2 = LineString(diag_sorted[-1])
+
+        # # interseccion = linea_1.intersection(linea_2)
+
+        #     # Calcular la intersección
+        # interseccion = self.calcular_interseccion(*linea_1_puntos, *linea_2_puntos)
+
+        # mitad = img.shape[1]/2
+        # x = interseccion.x
+
         img = self.rgb_image_np
-        rgba_color = np.uint8([[[144, 29, 46]]])
-        hsv_color = cv2.cvtColor(rgba_color, cv2.COLOR_RGB2HSV)
-
-        lower_blue = np.array([hsv_color[0][0][0] - 10, 100, 100])
-        upper_blue = np.array([hsv_color[0][0][0] + 10, 255, 255])
-
-        hsv_image = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-        # Aplicar una máscara para detectar los píxeles azules
-        mask = cv2.inRange(hsv_image, lower_blue, upper_blue)
-        img = cv2.bitwise_and(img, img, mask=mask)
-        img = cv2.medianBlur(img, 5)
-
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(img, 50, 150, apertureSize=3)
-        lines = cv2.HoughLines(edges, 1, np.pi/360, 60)
-
-        extremo = None
-        inicio = None
-        punta = None
-        horizontal = []
-        diag = []
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+        lines = cv2.HoughLinesP(edges, 1, np.pi/180, 100,
+                                minLineLength=5, maxLineGap=190)
+        sumax = 0
+        sumay = 0
         for line in lines:
-            rho, theta = line[0]
-            a = np.cos(theta)
-            b = np.sin(theta)
-            x0 = a*rho
-            y0 = b*rho
-            x1 = int(x0 + 1000*(-b))
-            y1 = int(y0 + 1000*(a))
-            x2 = int(x0 - 1000*(-b))
-            y2 = int(y0 - 1000*(a))
+            x1, y1, x2, y2 = line[0]
+            sumax += x1 + x2
+            sumay += y1 + y2
 
-            if x2 - x1 == 0:
-                pendiente = 0
-            elif y2 - y1 == 0:
-                pendiente = 0
-            else:
-                pendiente = round((y2-y1)/(x2-x1))
-            if pendiente == 0:
-                horizontal.append(((x1, y1), (x2, y2)))
-            else:
-                diag.append(((x1, y1), (x2, y2)))
-
-        diag_sorted = sorted(diag, key=lambda x: x[1][1])
-
-        linea_1 = LineString(diag_sorted[0])
-        linea_2 = LineString(diag_sorted[-1])
-
-        interseccion = linea_1.intersection(linea_2)
-
-        mitad = img.shape[1]/2
-        x = interseccion.x
-        if mitad < x:
+        if sumax > 12000:
+            giro = -0.35
             rospy.loginfo("IZQUIERDA")
-            return 90
         else:
+            giro = 0.35
             rospy.loginfo("DERECHA")
-            return -90
+        return giro
+
+        # if mitad < x:
+        #     rospy.loginfo("IZQUIERDA")
+        #     return 90
+        # else:
+        #     rospy.loginfo("DERECHA")
+        #     return -90
 
 
 if __name__ == '__main__':

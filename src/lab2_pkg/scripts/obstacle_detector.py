@@ -1,4 +1,4 @@
-##! /usr/bin/env python3
+#! /usr/bin/env python3
 # Hasta aqui funciona la llegada pero es reactivo en su movimiento
 
 import rospy
@@ -7,6 +7,8 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Vector3, Twist
 from tf.transformations import euler_from_quaternion
+import shapely as shp
+from shapely.geometry import LineString, Point
 
 # from turtlebot_audio import TurtlebotAudio
 
@@ -35,18 +37,12 @@ class TurtlebotController(object):
     def __init__(self):
 
         self.bridge = CvBridge()
-        self.vector = Vector3(0, 0, 0)
         self.depth_image_np = None
-        self.resolucion = 0.01
-        self.velocidad_lineal = 0.2
-        self.i = 0
-        self.giro = 0
 
-        self.ref_center = 0
+        self.velocidad_lineal = 0.1
         self.angular_speed = 0
-        self.pos = 0
-        self.eje = False
         self.fin = False
+        self.giro = 0
 
         self.rate_hz = 10
         self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odom_cb)
@@ -61,51 +57,38 @@ class TurtlebotController(object):
             '/robot_angular/control_effort', Float64, self.velocidad_angular)
 
         self.rate_obj = rospy.Rate(self.rate_hz)
-        # rospy.init_node('turtlebot')
 
-        # self.depth_img_sub = rospy.Subscriber(
-        #     '/camera/depth/image_raw', Image, self.depth_image_cb)
         self.depth_img_sub = rospy.Subscriber(
-            '/camera_depth/image', Image, self.depth_image_cb, queue_size=3)
+            '/camera/depth/image_raw', Image, self.depth_image_cb)
         self.rgb_img_sub = rospy.Subscriber(
             '/camera/rgb/image_color', Image, self.rgb_image_cb)
         self.cmd_vel_pub = rospy.Publisher(
             '/yocs_cmd_vel_mux/input/navigation', Twist, queue_size=10)
-        self.occupancy_state_pub = rospy.Publisher(
-            '/occupancy_state', Vector3, queue_size=10)
 
         while self.center_state.get_num_connections() == 0 and not rospy.is_shutdown():
             rospy.sleep(0.2)
         while self.center_set_point.get_num_connections() == 0 and not rospy.is_shutdown():
             rospy.sleep(0.2)
-        self.center_set_point.publish(0)
-
-        # self.mover_sub = rospy.Subscriber(
-        #    '/goal_list', PoseArray, self.accion_mover_cb)
 
         rospy.sleep(0.2)
+        self.period = 1/3
+        rospy.Timer(rospy.Duration(self.period), self.obtacle_detected)
         self.aplicar_velocidad()
 
     def odom_cb(self, msg):
         self.x = msg.pose.pose.position.x
         self.y = msg.pose.pose.position.y
-        self.z = msg.pose.pose.position.z
         roll, pitch, self.yaw = euler_from_quaternion((msg.pose.pose.orientation.x,
                                                        msg.pose.pose.orientation.y,
                                                        msg.pose.pose.orientation.z,
                                                        msg.pose.pose.orientation.w))
-        rospy.loginfo('Current pose - lin: (%f, %f) ang: (%f)' %
-                      (self.x, self.y, self.yaw))
+        # rospy.loginfo([self.x, self.y, self.yaw])
 
-        if self.yaw < 0:
-            self.yaw = self.yaw + 2*np.pi
         self.center_state.publish(self.yaw)
 
     def depth_image_cb(self, msg):
         try:
             self.depth_image_np = self.bridge.imgmsg_to_cv2(msg)
-            self.vector = self.obtacle_detected()
-            self.rate_obj.sleep()
         except CvBridgeError as e:
             rospy.logerr(e)
 
@@ -115,21 +98,12 @@ class TurtlebotController(object):
         except CvBridgeError as e:
             rospy.logerr(e)
 
-    def obtacle_detected(self):
-        # Es un vector de tres cosas, que incluye la condicion, idea:
-        # (0, 0, 0) -> sigue derecho
-        # (1, 0, 0) -> rota a la derecha
-        # (0, 1, 0) -> Retrocede
-        # (0, 0, 1) -> Rota a la izquierda
-        # Los otros casos de por ejemplo, retroceder y girar a la vez,
-        # Provocaran que  termine chocando al darse la vuelta, ya que,
-        # no tenemos sensores en la parte trasera del equipo
+    def obtacle_detected(self, data):
 
-        obstacle = False
         if self.depth_image_np is not None:
-            columna1 = self.depth_image_np[:, 0]
-            columna2 = self.depth_image_np[:, 320]
-            columna3 = self.depth_image_np[:, 639]
+            columna1 = self.depth_image_np[0:213]
+            columna2 = self.depth_image_np[213:426]
+            columna3 = self.depth_image_np[426:640]
 
             columna1 = np.where(np.isnan(columna1), 0.0, columna1)
             columna2 = np.where(np.isnan(columna2), 0.0, columna2)
@@ -139,113 +113,44 @@ class TurtlebotController(object):
             obstacle2 = np.mean(columna2)
             obstacle3 = np.mean(columna3)
 
-            if obstacle1 < 0.1:
-                obstacle1 = 1
-            else:
-                obstacle1 = 0
+            columnas = Vector3(obstacle1, obstacle2, obstacle3)
+            rospy.loginfo([obstacle1, obstacle2, obstacle3])
 
-            if obstacle2 < 0.1:
-                obstacl2 = 1
-            else:
-                obstacle2 = 0
+            # 27 grados por seccion
+            # cambiar, creo que deberian de ser 17
+            grad18 = np.deg2rad(27)
+            obj = self.yaw
+            if not self.fin:
+                # parametro a cambiar = dist: define la distancia hasta el frente que activa
+                # la deteccion de flecha.
+                # el and esta para cuando no detecte nada a los lados, cuando sea nan.
 
-            if obstacle3 < 0.1:
-                obstacle = 1
-            else:
-                obstacle3 = 0
-            # obstacle1 = np.mean(columna1 < 0.1)
-            # obstacle2 = np.mean(columna2 < 0.1)
-            # obstacle3 = np.mean(columna3 < 0.1)
-            columnas = Vector3(columna1, columna2, columna3)
-            columna3 = 0.057
-            self.centro_tunel = (np.mean(columna3) -
-                                 np.mean(columna1))/2  # - 1.25
-            self.pos_vs_centro = self.y - self.centro_tunel
-            rospy.loginfo('columna1: %f' % np.mean(columna1))
-            rospy.loginfo('columna2: %f' % np.mean(columna2))
-            rospy.loginfo('columna3: %f' % np.mean(columna3))
-            rospy.loginfo('centro tunel: %f' % self.centro_tunel)
-            rospy.loginfo('diferencia a referencia: %f' % self.pos_vs_centro)
-
-            frente = (self.x+np.cos(self.yaw), self.y+np.sin(self.yaw))
-            # angulo = getAngle(frente, (self.x, self.y),
-            #                   (self.x, self.centro_tunel))
-            angulo = getAngle(frente, (self.x, self.y),
-                              (self.x, self.pos_vs_centro))
-            obj_aux_yaw_1 = self.yaw + angulo  # MANDAR A PID
-
-            # columna 1 = izquierda
-            # columna 2 = frente
-            # columna 3 = derecha
-            # rospy.loginfo("columna1: {}".format(np.mean(columna1)))
-
-            if obstacle1:
-                obstacle1 = 1
-            else:
-                obstacle1 = 0
-
-            if obstacle2:
-                obstacle2 = 1
-            else:
-                obstacle2 = 0
-
-            if obstacle3:
-                obstacle3 = 1
-            else:
-                obstacle3 = 0
-            self.center_set_point.publish(obj_aux_yaw_1)
-            # self.center_state.publish(abs(self.y-1.25))
-            vector = Vector3(obstacle1, obstacle2, obstacle3)
-            self.occupancy_state_pub.publish(vector)
-        else:
-            vector = Vector3(0, 0, 0)
-        return vector
+                dist = 0.8
+                if obstacle2 < dist or (obstacle1 == 0.0 and obstacle2 == 0.0):
+                    self.velocidad_lineal = 0
+                    giro = self.detectar_imagen()
+                    obj = np.deg2rad(giro) + self.yaw
+                    rospy.logerr(obj)
+                    self.fin = True
+                elif obstacle1 < obstacle3:
+                    obj = self.yaw - grad18
+                elif obstacle3 < obstacle1:
+                    obj = self.yaw + grad18
+            self.center_set_point.publish(obj)
 
     def aplicar_velocidad(self):
         speed = Twist()
 
-        while not rospy.is_shutdown():  # CONDICIONES
-            self.run()
+        while not rospy.is_shutdown():
             speed.linear.x = self.velocidad_lineal
             speed.angular.z = self.angular_speed
             self.cmd_vel_pub.publish(speed)
             self.rate_obj.sleep()
 
-    def run(self):
-        free_space = True
-        giro_der = -0.35
-        giro_izq = 0.35
-        vector = self.vector
-
-        rospy.loginfo([vector.x, vector.y, vector.z])
-
-        if (vector.y == 1) or self.fin:
-            if self.i < 70:
-                self.i += 1
-                self.velocidad_lineal = 0
-                self.fin = True
-                self.angular_speed = self.giro
-            else:
-                while True:
-                    break
-
-        elif vector.x == 1:
-            self.velocidad_lineal = 0.2
-        elif vector.z == 1:
-            self.velocidad_lineal = 0.2
-        else:
-            self.velocidad_lineal = 0.2
-
     def velocidad_angular(self, data):
-        if not self.fin:
-            self.angular_speed = float(data.data)
-        else:
-            self.angular_speed = 0
-            self.giro = self.detectar_imagen()
+        self.angular_speed = float(data.data)
 
     def detectar_imagen(self):
-        # img = cv2.imread(cv2.samples.findFile(
-        #     '/home/govidal/code/robotica-movil/workspace/src/lab2_pkg/scripts/arrow_left.png'))
         img = self.rgb_image_np
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         edges = cv2.Canny(gray, 50, 150, apertureSize=3)
@@ -259,15 +164,83 @@ class TurtlebotController(object):
             sumay += y1 + y2
 
         if sumax > 12000:
-            giro = -0.35
+            rospy.loginfo("Flecha izquierda")
+            giro = -90
         else:
-            giro = 0.35
+            rospy.loginfo("Flecha derecha")
+            giro = 90
         return giro
+
+    def detectar_flecha(self):
+        # hecho por gus
+        # no funciona
+        # a veces detecta izquierda cuand otiene que ser derecha
+        # lo mismo pasa con el codigo de la pauli pero este requiere mucho más procesamiento que
+        # el de la pauli :p
+        img = self.rgb_image_np
+        rgba_color = np.uint8([[[144, 29, 46]]])
+        hsv_color = cv2.cvtColor(rgba_color, cv2.COLOR_RGB2HSV)
+
+        lower_blue = np.array([hsv_color[0][0][0] - 10, 100, 100])
+        upper_blue = np.array([hsv_color[0][0][0] + 10, 255, 255])
+
+        hsv_image = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+        # Aplicar una máscara para detectar los píxeles azules
+        mask = cv2.inRange(hsv_image, lower_blue, upper_blue)
+        img = cv2.bitwise_and(img, img, mask=mask)
+        img = cv2.medianBlur(img, 5)
+
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(img, 50, 150, apertureSize=3)
+        lines = cv2.HoughLines(edges, 1, np.pi/360, 60)
+
+        extremo = None
+        inicio = None
+        punta = None
+        horizontal = []
+        diag = []
+        for line in lines:
+            rho, theta = line[0]
+            a = np.cos(theta)
+            b = np.sin(theta)
+            x0 = a*rho
+            y0 = b*rho
+            x1 = int(x0 + 1000*(-b))
+            y1 = int(y0 + 1000*(a))
+            x2 = int(x0 - 1000*(-b))
+            y2 = int(y0 - 1000*(a))
+
+            if x2 - x1 == 0:
+                pendiente = 0
+            elif y2 - y1 == 0:
+                pendiente = 0
+            else:
+                pendiente = round((y2-y1)/(x2-x1))
+            if pendiente == 0:
+                horizontal.append(((x1, y1), (x2, y2)))
+            else:
+                diag.append(((x1, y1), (x2, y2)))
+
+        diag_sorted = sorted(diag, key=lambda x: x[1][1])
+
+        linea_1 = LineString(diag_sorted[0])
+        linea_2 = LineString(diag_sorted[-1])
+
+        interseccion = linea_1.intersection(linea_2)
+
+        mitad = img.shape[1]/2
+        x = interseccion.x
+        if mitad < x:
+            rospy.loginfo("IZQUIERDA")
+            return 90
+        else:
+            rospy.loginfo("DERECHA")
+            return -90
 
 
 if __name__ == '__main__':
 
     rospy.init_node('reactive_movement')
     turtlebot = TurtlebotController()
-    turtlebot.run()
     rospy.spin()

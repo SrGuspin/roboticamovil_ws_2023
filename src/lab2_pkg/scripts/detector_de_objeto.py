@@ -20,7 +20,7 @@ class BlueSquareDetector:
             '/blue_square_position', Vector3, queue_size=1)
         self.depth_image_np = None
         self.cv_image = None
-        self.rate_hz = 3
+        self.rate_hz = 10
         self.rate_obj = rospy.Rate(self.rate_hz)
         self.vector = Vector3(0, 0, 0)
         rgba_color = np.uint8([[[83, 134, 217]]])
@@ -30,10 +30,6 @@ class BlueSquareDetector:
         self.lower_blue = np.array([hsv_color[0][0][0] - 10, 100, 100])
         self.upper_blue = np.array([hsv_color[0][0][0] + 10, 255, 255])
 
-        self.curr_time = 0.0
-        self.period = 1/3
-        rospy.Timer(rospy.Duration(self.period), self.detector_de_cubo)
-
     def rgb_image_callback(self, msg):
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
@@ -41,7 +37,6 @@ class BlueSquareDetector:
             rospy.logerr(e)
             return e
 
-    def detector_de_cubo(self, data):
         # Transformar la imagen al espacio de color HSV
         hsv_image = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2HSV)
 
@@ -83,35 +78,7 @@ class BlueSquareDetector:
         else:
             position_msg = Vector3(0, 0, 1)
             self.blue_square_pub.publish(position_msg)
-        # rospy.loginfo("Blue square position: {}".format(position_msg.z))
-
-        # if blue_square_contour is not None:  # Calcular la posición horizontal x del cuadrado azul con respecto al centro de la imagen
-        #     # momento de orden 0 para el área.
-        #     M = cv2.moments(blue_square_contour)
-        #     # M['m00'] es el área debido a que el cuadrado azul es un contorno cerrado. y se escribe como m00 en lugar de m0, porque es un momento de orden 0.
-        #     if M['m00'] != 0 and area > 1000:
-        #         # cX es el centroide del contorno en el eje x.
-        #         cX = int(M['m10'] / M['m00'])
-        #         # image_width es el ancho de la imagen.
-        #         image_width = hsv_image.shape[1]
-        #         # center_x es el centro de la imagen en el eje x.
-        #         center_x = image_width // 2
-        #         position_x = cX - center_x
-
-        #         """ ##################   DISTANCIA   ##################
-        #         if (2 * (cX - center_x) * math.tan(0.523599)) != 0: # si sabemos que el lado del cuadrado son 15 cm, entonces podemos calcular la distancia del robot al cuadrado azul, la camara tiene 57° de angulo de vision horizontal:
-        #             distancia = (14 * 640) / (2 * (cX - center_x) * math.tan(0.523599))
-        #         else:
-        #             distancia = 0 """
-
-        #         ##################   ANGULO   ##################
-        #     # angulo_yaw es el ángulo de orientación del robot con respecto al cuadrado azul.
-        #     angulo_yaw = np.arctan2(cX, center_x)
-
-        #     # Publicar la posición del cuadrado azul
-        #     position_msg = Vector3(position_x, distancia, angulo_yaw)
-        #     self.blue_square_pub.publish(position_msg)
-        #     rospy.loginfo("Blue square position: {}".format(position_msg))
+        self.rate_obj.sleep()
 
 
 if __name__ == '__main__':

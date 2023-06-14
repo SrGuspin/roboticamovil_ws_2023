@@ -110,9 +110,9 @@ class SeguidorDeObjeto(object):
 
         if vector.z == 1:
             self.lineal_speed = 0
-            angulo = 0
+            angulo = self.yaw
         else:
-            self.lineal_speed = 0
+            self.lineal_speed = 0.2
 
         if not np.isnan(cosa):
             self.ang_set_point.publish(error)
