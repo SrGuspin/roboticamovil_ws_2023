@@ -7,6 +7,7 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from tf.transformations import euler_from_quaternion
 import numpy as np
+from random import gauss
 
 
 class Lidar(object):
@@ -16,15 +17,14 @@ class Lidar(object):
         self.yaw = 0
         self.lineal_speed = 0
         self.angular_speed = 0
+        self.sigma_hit = 0.1
         rospy.init_node('lidar')
         self.rate_hz = 10
         self.rate_obj = rospy.Rate(self.rate_hz)
         self.lidar_sub = rospy.Subscriber('/scan', LaserScan, self.lidar_cb)
         self.map_sub = rospy.Subscriber('pf_map', OccupancyGrid, self.mapa_cb)
-        self.particles_sub = rospy.Subscriber(
-            'particles', PoseArray, self.particles_cb)
         self.map = None
-        self.particles = []
+        self.q = []
 
     def mapa_cb(self, data):
         resolution = data.info.resolution
@@ -47,12 +47,6 @@ class Lidar(object):
         closest_point = self.points[index]
         return closest_point
 
-    def particles_cb(self, poses):
-        # Poses hipoteticas del robot.
-        new_points = [(pose.position.x, pose.position.y)
-                      for pose in data.poses]
-        self.particles = new_points
-
     def lidar_cb(self, data):
         self._range_max = data.range_max
         self._range_min = data.range_min
@@ -68,10 +62,19 @@ class Lidar(object):
         pass
 
     def likelyhood_fields(self, theta, valor):
-        # aplicamos el algoritmo en base a sensor
-        # poses hipoteticas = self.particles
-        # mapa = self.map
+        x = self.x + valor * np.cos(self.yaw + theta*self._ang_increment)
+        y = self.y + valor * np.sin(self.yaw + theta*self._ang_increment)
+        punto = self.find_closest_point((x, y))
+        dist = np.sqrt(((x - punto[0])**2) + ((y - punto[1])**2))
+        prob = gauss(dist, self.sigma_hit)
+        q_new = 1 * prob
 
+        if len(self.q) == len(self.ranges):
+            q_old = self.q[theta]
+            q_new = q_old * prob
+            self.q[theta] = q_new
+        else:
+            self.q.append(q_new)
         pass
 
 
@@ -79,4 +82,3 @@ if __name__ == '__main__':
 
     lidar = Lidar()
     rospy.spin()
-algo
