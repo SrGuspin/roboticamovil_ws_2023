@@ -48,6 +48,7 @@ class PFMap:
 
 
 def pub_initial_pose(x, y, yaw):
+    rospy.sleep(5)
     pub_init_pose = rospy.Publisher('initial_pose', Pose, queue_size=1)
 
     while pub_init_pose.get_num_connections() == 0 and not rospy.is_shutdown():

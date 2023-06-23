@@ -87,4 +87,7 @@ if __name__ == '__main__':
     free_positions = map.get_free_positions()
     particle_manager.create_particles(free_positions)
 
-    #
+    for i in range(0, 10):
+        # rotate the particle 30 degrees
+        particle_manager.update_particles(0, 0, (30*np.pi/180))
+        rospy.sleep(2)

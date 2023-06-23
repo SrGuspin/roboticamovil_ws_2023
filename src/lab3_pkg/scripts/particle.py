@@ -9,7 +9,7 @@ class Particle(object):
         self.sigma = sigma
 
     def move(self, delta_x, delta_y, delta_ang):
-        # movemos las particulas acompañadas de un grado de incertesa gaussiano
+        # movemos las particulas acompanadas de un grado de incertesa gaussiano
         self.x += delta_x + gauss(0, self.sigma)
         self.y += delta_y + gauss(0, self.sigma)
         self.ang += delta_ang + gauss(0, self.sigma)

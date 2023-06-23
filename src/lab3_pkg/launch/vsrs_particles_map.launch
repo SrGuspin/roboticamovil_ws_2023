@@ -3,9 +3,10 @@
 
   <include file="$(find very_simple_robot_simulator)/launch/minimal_simulator.launch" />
   <include file="$(find very_simple_robot_simulator)/launch/lidar_simulator_py.launch" />
+  <!-- <include file="$(find very_simple_robot_simulator)/launch/world_state.launch" /> -->
 
   <node pkg="very_simple_robot_simulator" name ="world_state_gui" type ="world_state_gui.py">
-   <param name="/map_file" type="yaml" value="$(find lab3_pkg)/map/map.yaml"/>
+   <param name="/map_file" type="yaml" value="$(find lab3_pkg)/map/mapa.yaml"/>
   </node>
   
   <node pkg="lab3_pkg" name="map_broadcaster" type="map_broadcaster.py" output = "screen"/>
