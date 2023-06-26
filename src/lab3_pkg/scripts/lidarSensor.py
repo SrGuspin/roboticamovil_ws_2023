@@ -16,6 +16,8 @@ class Lidar(object):
     def __init__(self):
         self.x = 0
         self.y = 0
+        self.x_hip = 0
+        self.y_hip = 0
         self.yaw = 0
         self.lineal_speed = 0
         self.angular_speed = 0
@@ -44,12 +46,6 @@ class Lidar(object):
         # KDTree del mapa real.
         # a KDTree hay que pasarle los obstáculos
 
-        # pub_initial_pose(x=0.5, y=0.5, yaw=0.0)
-        # map = PFMap("pf_map")
-        # rospy.loginfo(f'mapita {map}')
-        # wall_positions = map.get_walls_positions()
-        # rospy.loginfo(f'wall_positions {wall_positions}')
-
         self.map = spatial.KDTree(self.points)
         rospy.loginfo(f'self.mapa: {self.map}')
         self.q = []
@@ -60,9 +56,6 @@ class Lidar(object):
         coordenadas = self.points[index]
         # rospy.loginfo(f'coordenadas: {coordenadas}')
         return distance, coordenadas
-        # closest_point = self.map[index]
-        # return closest_point
-        # return distance
 
     def lidar_cb(self, data):
         self._range_max = data.range_max
@@ -112,25 +105,6 @@ class Lidar(object):
                 self.q[theta] = q_new
             else:
                 self.q.append(q_new)
-
-            # rospy.loginfo(f'q_new: {q_new}')
-
-        # rospy.loginfo(f'Nuevo theta: {self.theta_real}')
-        # x = self.x + valor * np.cos(self.yaw + theta*self._ang_increment)
-        # y = self.y + valor * np.sin(self.yaw + theta*self._ang_increment)
-        # punto = self.find_closest_point((x, y))
-        # dist = np.sqrt(((x - punto[0])**2) + ((y - punto[1])**2))
-        # prob = gauss(dist, self.sigma_hit)
-        # q_new = 1 * prob
-
-        # if len(self.q) == len(self.ranges):
-        #     q_old = self.q[theta]
-        #     q_new = q_old * prob
-
-        #     self.q[theta] = q_new
-        # else:
-        #     self.q.append(q_new)
-        #     print(q_new)
 
 
 if __name__ == '__main__':
