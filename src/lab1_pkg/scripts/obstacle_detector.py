@@ -18,8 +18,10 @@ class TurtlebotController(object):
     def __init__(self):
         # self.speaker = TurtlebotAudio()
         self.bridge = CvBridge()
+        self.vector = Vector3(0, 0, 0)
         self.depth_image_np = None
-        self.rate_obj = rospy.Rate(5)
+        self.rate_hz = 5
+        self.rate_obj = rospy.Rate(self.rate_hz)
         self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odom_cb)
         self.depth_img_sub = rospy.Subscriber(
             '/camera/depth/image_raw', Image, self.depth_image_cb)
@@ -42,6 +44,7 @@ class TurtlebotController(object):
     def depth_image_cb(self, msg):
         try:
             self.depth_image_np = self.bridge.imgmsg_to_cv2(msg)
+            self.vector = self.obtacle_detected()
         except CvBridgeError as e:
             rospy.logerr(e)
 
@@ -90,33 +93,41 @@ class TurtlebotController(object):
             vector = Vector3(0, 0, 0)
         return vector
 
+    def aplicar_velocidad(self, tripleta):
+        lin_speed = tripleta[0]
+        ang_speed = tripleta[1]
+        tiempo = tripleta[2]
+
+        ciclos = round(tiempo*self.rate_hz)
+        speed = Twist()
+        speed.linear.x = lin_speed
+        speed.angular.z = ang_speed
+        while not rospy.is_shutdown():
+            if ciclos >= 0:
+                rospy.loginfo('publishing speed (%f, %f)' %
+                              (lin_speed, ang_speed))
+                self.cmd_vel_pub.publish(speed)
+                self.rate_obj.sleep()
+            else:
+                break
+            ciclos -= 1
+
     def run(self):
         free_space = True
+        giro_der = -0.2
+        giro_izq = 0.2
+        tiempo_medio_giro = int(np.pi/giro_izq)
         while not rospy.is_shutdown():
-            vector = self.obtacle_detected()
+            vector = self.vector
 
-            if vector.x == 1:
-                free_space = False
-                giro = -0.2
+            if vector.x == 1 and vector.z == 1:
+                self.aplicar_velocidad((0, giro_der, tiempo_medio_giro))
+            elif vector.x == 1:
+                self.aplicar_velocidad((0, giro_der, tiempo_medio_giro/10))
             elif vector.z == 1:
-                free_space = False
-                giro = 0.2
+                self.aplicar_velocidad((0, giro_izq, tiempo_medio_giro/10))
             else:
-                giro = 0
-                free_space = True
-
-            if not free_space:
-                # Rotate
-                speed = Twist()
-                speed.linear.x = 0
-                speed.angular.z = giro
-            else:
-                # Go forward
-                speed = Twist()
-                speed.linear.x = 0.3
-                speed.angular.z = 0
-            self.cmd_vel_pub.publish(speed)
-            self.rate_obj.sleep()
+                self.aplicar_velocidad((0.3, 0, 1))
 
 
 if __name__ == '__main__':

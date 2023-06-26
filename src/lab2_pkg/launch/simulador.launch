@@ -1,9 +1,7 @@
 <launch>
-	
+
 	<include file="$(find very_simple_robot_simulator)/launch/minimal_simulator_py.launch" />
 	<include file="$(find very_simple_robot_simulator)/launch/openni_simulator_py.launch" />
 	<include file="$(find very_simple_robot_simulator)/launch/world_state.launch" />
-
-	<node pkg="lab1_pkg" name="dead_reckoning_nav" type="actividad_2.py" />
-
+    
 </launch>
