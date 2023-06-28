@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 import rospy
 from scipy import spatial
 from geometry_msgs.msg import Twist, PoseArray, Pose
@@ -16,8 +16,17 @@ class Correlacion(object):
     def __init__(self):
         self.x = 0
         self.y = 0
+        rospy.init_node('correlacion')
         self.global_map = np.array([(1, 1, 1), (0, 0, 0), (0, 0, 0)])
-        self.local_map = np.array([(0, 0, 1), (0, 0, 1), (0, 0, 0)])
+        # self.local_map = np.array([(0, 0, 1), (0, 0, 1), (0, 0, 0)])
+        self.map_l = rospy.Subscriber(
+            '/scaner_q', OccupancyGrid, self.mapa_local_cb)
+
+    def mapa_local_cb(self, data):
+        self.mapa_local = []
+        for i in data.data:
+            self.mapa_local.append(i/10)
+        rospy.loginfo(self.mapa_local)
 
     def correlacionar_mapas(self):
         for angle in [0, 90, 180, 270]:

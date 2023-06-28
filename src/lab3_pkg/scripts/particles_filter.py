@@ -6,8 +6,6 @@ class Filter(object):
         self.x_hip = 0
         self.y_hip = 0
 
-        
-
 
 if __name__ == '__main__':
 

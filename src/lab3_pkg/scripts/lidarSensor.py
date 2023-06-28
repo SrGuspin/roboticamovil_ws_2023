@@ -3,6 +3,7 @@
 import rospy
 from scipy import spatial
 from geometry_msgs.msg import Twist, PoseArray, Pose
+from geometry_msgs.msg import Vector3
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import OccupancyGrid
@@ -17,18 +18,24 @@ class Lidar(object):
         self.x = 0
         self.y = 0
         self.x_hip = 0
+        self.new_time = 0
+        self.old_time = 0
         self.y_hip = 0
         self.yaw = 0
         self.lineal_speed = 0
         self.angular_speed = 0
         self.sigma_hit = 0.3
+        self.map = None
         rospy.init_node('lidar')
         self.rate_hz = 10
         self.rate_obj = rospy.Rate(self.rate_hz)
         self.lidar_sub = rospy.Subscriber('/scan', LaserScan, self.lidar_cb)
         self.map_sub = rospy.Subscriber('/pf_map', OccupancyGrid, self.mapa_cb)
+        self.mover = rospy.Publisher(
+            '/mover', PoseArray, queue_size=10)
+        self.scaner_q = rospy.Publisher(
+            '/scaner_q', OccupancyGrid, queue_size=10)
         rospy.sleep(2)
-        self.map = None
         self.q = []
 
     def mapa_cb(self, data):
@@ -36,7 +43,7 @@ class Lidar(object):
         width = data.info.width
         height = data.info.height
         origin = data.info.origin
-        rospy.loginfo(f'resolution: {resolution}')
+        # rospy.loginfo(f'resolution: {resolution}')
 
         grid = np.array(data.data).reshape(height, width)
 
@@ -47,7 +54,7 @@ class Lidar(object):
         # a KDTree hay que pasarle los obstáculos
 
         self.map = spatial.KDTree(self.points)
-        rospy.loginfo(f'self.mapa: {self.map}')
+        # rospy.loginfo(f'self.mapa: {self.map}')
         self.q = []
 
     def find_closest_point(self, point):
@@ -74,9 +81,32 @@ class Lidar(object):
         self.dist = []
         for theta, valor in enumerate(self.ranges):
             self.likelyhood_fields(theta, valor)
-            # rospy.loginfo(f'thetha: {theta}')
-        rospy.loginfo(f'promedio de q: {np.mean(self.q)}')
-        # rospy.loginfo(f'desviación estandar: {np.std(self.dist)}')
+
+        # HACE QUE SE MUEVA EL ROBOT CADA 5 SEGUNDOS
+        # la idea de esto es que se detenga cada cierto avance para tomar datos
+        self.new_time = int(rospy.get_time())
+        if (self.new_time - self.old_time) == 5:
+            pose_array_msg = PoseArray()
+            self.se_mueve = 1
+            pose_array_msg.header.frame_id = str(self.se_mueve)
+            self.mover.publish(pose_array_msg)
+
+        if (self.new_time - self.old_time) == 10 or self.old_time == 0:
+            self.old_time = self.new_time
+            pose_array_msg = PoseArray()
+            self.se_mueve = 0
+            pose_array_msg.header.frame_id = str(self.se_mueve)
+            self.mover.publish(pose_array_msg)
+            self.lidar_pub()
+
+    def lidar_pub(self):
+        datos_enviar = OccupancyGrid()
+        enviar = []
+        for i in self.q:
+            enviar.append(int(i*10))
+        datos_enviar.data = enviar
+        rospy.loginfo(enviar)
+        self.scaner_q.publish(datos_enviar)
 
     def likelyhood_fields(self, theta, valor):
         if self.map is not None and valor < 4:
