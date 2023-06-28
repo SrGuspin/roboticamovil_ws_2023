@@ -19,14 +19,31 @@ class Correlacion(object):
         rospy.init_node('correlacion')
         self.global_map = np.array([(1, 1, 1), (0, 0, 0), (0, 0, 0)])
         # self.local_map = np.array([(0, 0, 1), (0, 0, 1), (0, 0, 0)])
-        self.map_l = rospy.Subscriber(
+        self.__map_l = rospy.Subscriber(
             '/scaner_q', OccupancyGrid, self.mapa_local_cb)
+        self.__map_cb = rospy.Subscriber(
+            '/pf_map', OccupancyGrid, self.mapa_local_cb)
 
     def mapa_local_cb(self, data):
-        self.mapa_local = []
-        for i in data.data:
-            self.mapa_local.append(i/10)
-        rospy.loginfo(self.mapa_local)
+        self.mapa_local = data.data
+
+    def mapa_global_cb(self, data):
+        resolution = data.info.resolution
+        width = data.info.width
+        height = data.info.height
+        origin = data.info.origin
+
+        grid = np.array(data.data).reshape(height, width)
+
+        self.points = [[x * resolution + origin.position.x, y * resolution + origin.position.y]
+                       for y in range(height) for x in range(width) if grid[y, x] > 50]
+
+        # KDTree del mapa real.
+        # a KDTree hay que pasarle los obstáculos
+        self.map = spatial.KDTree(self.points)
+
+        self.x = origin.position.x
+        self.y = origin.position.y
 
     def correlacionar_mapas(self):
         for angle in [0, 90, 180, 270]:
