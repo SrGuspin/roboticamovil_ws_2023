@@ -2,12 +2,13 @@
 
 import rospy
 from scipy import spatial
-from geometry_msgs.msg import PoseArray, Pose
+from geometry_msgs.msg import PoseArray, Pose, Twist
 from tf.transformations import quaternion_from_euler
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Header
 from nav_msgs.msg import OccupancyGrid
 import numpy as np
+
 from random import gauss, choices
 
 
@@ -25,6 +26,7 @@ class Lidar(object):
         self.sigma_hit = 0.3
         self.map = None
         self.particulas = None
+        self.sigma = 0.01
         self.q = {}
         self.pesos = [i for i in range(181)]
         rospy.init_node('lidar')
@@ -42,12 +44,26 @@ class Lidar(object):
 
         self.pub_particules = rospy.Publisher(
             "/pf_location", PoseArray, queue_size=10)
+        self.velocity_sub = rospy.Subscriber(
+            '/yocs_cmd_vel_mux/output/cmd_vel', Twist, self.velocity_cb)
+        self.last_speed = None
         rospy.sleep(2)
+
+    def velocity_cb(self, msg):
+        # This method is called whenever a new velocity message is received
+        # Store the velocity for later use
+        self.robot_velocity = msg
+        if self.last_speed is None or self.robot_velocity != self.last_speed:
+            self.particulas = self.original_part
+            self.publish_particules()
 
     def particle_cb(self, data):
         self.particulas = [(pose.position.x, pose.position.y)
                            for pose in data.poses]
+        self.original_part = [(pose.position.x, pose.position.y)
+                              for pose in data.poses]
         rospy.loginfo("Particulas recibidas!")
+        self.publish_particules()
         pass
 
     def mapa_cb(self, data):
