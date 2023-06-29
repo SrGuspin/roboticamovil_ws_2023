@@ -8,6 +8,7 @@ from std_msgs.msg import Header
 from nav_msgs.msg import OccupancyGrid
 import numpy as np
 from random import gauss
+from pf_map import pub_initial_pose
 
 
 class Lidar(object):
@@ -33,8 +34,18 @@ class Lidar(object):
             '/mover', PoseArray, queue_size=10)
         self.scaner_q = rospy.Publisher(
             '/scaner_q', OccupancyGrid, queue_size=10)
+        self.__particle_sub = rospy.Subscriber(
+            "particles", PoseArray, queue_size=2)
         rospy.sleep(2)
         self.q = {}
+
+    def particle_cb(self, data):
+        # store particles
+        pass
+
+    def move_particles(self, where):
+        # move particles and assign sigma value
+        pass
 
     def mapa_cb(self, data):
         self.resolution = data.info.resolution
@@ -51,6 +62,7 @@ class Lidar(object):
 
         self.points = [[x * self.resolution + origin.position.x, y * self.resolution + origin.position.y]
                        for y in range(self.height) for x in range(self.width) if grid[y, x] > 50]
+        pub_initial_pose(x=origin.position.x, y=origin.position.y, yaw=0.0)
 
         # KDTree del mapa real.
         # a KDTree hay que pasarle los obstáculos
@@ -71,16 +83,14 @@ class Lidar(object):
         self._ang_increment = data.angle_increment
         self._ang_min = data.angle_min
         self._ang_max = data.angle_max
-        # 180 datos
-        # rospy.loginfo(f'numero de datos: {len(data.ranges)}')
-
-        # iterar haz por haz del lidar
-        # luego llamar a likelyhood fields con el valor del haz
 
         self.ranges = data.ranges
         self.dist = []
         for theta, valor in enumerate(self.ranges):
+            # obtener particulas hipoteticas
+            # a cada particula se le asigna un peso
             self.likelyhood_fields(theta, valor)
+            # reescribo las poses hipoteticas como el valor verdadero del coso.
 
         # HACE QUE SE MUEVA EL ROBOT CADA 5 SEGUNDOS
         # la idea de esto es que se detenga cada cierto avance para tomar datos
