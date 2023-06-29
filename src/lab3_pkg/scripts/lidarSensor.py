@@ -10,12 +10,14 @@ from nav_msgs.msg import OccupancyGrid
 import numpy as np
 
 from random import gauss, choices
+from particle import Particle
 
 
 class Lidar(object):
     def __init__(self):
         self.x = 0
         self.y = 0
+        self.speed = Twist()
         self.x_hip = 0
         self.new_time = 0
         self.old_time = 0
@@ -23,12 +25,11 @@ class Lidar(object):
         self.yaw = 0
         self.lineal_speed = 0
         self.angular_speed = 0
-        self.sigma_hit = 0.3
+        self.sigma_hit = 0.01
         self.map = None
         self.particulas = None
-        self.sigma = 0.01
+        self.sigma = 0.2
         self.q = {}
-        self.pesos = [i for i in range(181)]
         rospy.init_node('lidar')
         self.rate_hz = 10
         self.mapa_local = OccupancyGrid()
@@ -44,24 +45,37 @@ class Lidar(object):
 
         self.pub_particules = rospy.Publisher(
             "/pf_location", PoseArray, queue_size=10)
-        self.velocity_sub = rospy.Subscriber(
-            '/yocs_cmd_vel_mux/output/cmd_vel', Twist, self.velocity_cb)
-        self.last_speed = None
-        rospy.sleep(2)
+        self.velocity_pub = rospy.Subscriber(
+            '/yocs_cmd_vel_mux/output/cmd_vel', Twist, self.velocity_cb, queue_size=10)
+
+        rospy.sleep(1)
 
     def velocity_cb(self, msg):
         # This method is called whenever a new velocity message is received
         # Store the velocity for later use
         self.robot_velocity = msg
-        if self.last_speed is None or self.robot_velocity != self.last_speed:
-            self.particulas = self.original_part
+        self.update_particle_positions()
+
+    def update_particle_positions(self):
+        # This method should be called periodically to update the particle positions
+        if self.robot_velocity is not None and self.particulas is not None:
+            dt = 1/10  # time since last update
+            dtheta = self.robot_velocity.angular.z * dt
+            dx = self.robot_velocity.linear.x * np.cos(dtheta) * dt
+            dy = self.robot_velocity.linear.x * np.sin(dtheta) * dt
+
+            for i, algo in enumerate(self.particulas):
+                self.particulas[i].move(dx, dy, dtheta)
             self.publish_particules()
 
     def particle_cb(self, data):
-        self.particulas = [(pose.position.x, pose.position.y)
-                           for pose in data.poses]
-        self.original_part = [(pose.position.x, pose.position.y)
-                              for pose in data.poses]
+        self.particulas = [1 for i in range(3000)]
+        self.original_part = [1 for i in range(3000)]
+        for n, pose in enumerate(data.poses):
+            particle = Particle(pose.position.x, pose.position.y, 0, 0.01, 1)
+            self.particulas[n] = particle
+            self.original_part[n] = particle
+        self.pesos = [1 for i in range(3000)]
         rospy.loginfo("Particulas recibidas!")
         self.publish_particules()
         pass
@@ -94,7 +108,21 @@ class Lidar(object):
         return distance, coordenadas
 
     def lidar_cb(self, data):
-        if self.particulas is not None:
+        self.new_time = int(rospy.get_time())
+        if (self.new_time - self.old_time) == 5:
+            pose_array_msg = PoseArray()
+            self.se_mueve = 1
+            pose_array_msg.header.frame_id = str(self.se_mueve)
+            self.mover.publish(pose_array_msg)
+
+        if (self.new_time - self.old_time) == 10 or self.old_time == 0:
+            self.old_time = self.new_time
+            pose_array_msg = PoseArray()
+            self.se_mueve = 0
+            pose_array_msg.header.frame_id = str(self.se_mueve)
+            self.mover.publish(pose_array_msg)
+
+        if self.particulas is not None and self.se_mueve == 0:
             self._range_max = data.range_max
             self._range_min = data.range_min
             self._ang_increment = data.angle_increment
@@ -102,43 +130,46 @@ class Lidar(object):
             self._ang_max = data.angle_max
 
             self.ranges = data.ranges
-            self.dist = []
 
             for theta, valor in enumerate(self.ranges):
                 # obtener particulas hipoteticas
                 # a cada particula se le asigna un peso
-                particula = choices(self.particulas, self.pesos, k=1)
-                w = self.likelyhood_fields(theta, valor, particula[0])
-                self.pesos[theta] = w
+                n_part = choices([i for i in range(3000)], self.pesos, k=1)
+                particula = self.particulas[n_part[0]]
+                w = self.likelyhood_fields(theta, valor, particula)
+                self.particulas[n_part[0]].peso = w
+                self.pesos[n_part[0]] = w
                 # reescribo las poses hipoteticas como el valor verdadero del coso.
             pesos_sum = sum(self.pesos)
 
             # Normaliza cada probabilidad en la lista
             if pesos_sum != 0:
                 self.pesos = [peso / pesos_sum for peso in self.pesos]
-                self.particulas = choices(
-                    self.particulas, weights=self.pesos, k=len(self.particulas))
-            self.publish_particules()
+                new_part = choices(
+                    self.particulas, self.pesos, k=len(self.particulas))
+                for part in range(len(new_part)):
+                    pos0 = new_part[part].pos()
+                    pos1 = self.particulas[part].pos()
 
-    def lidar_pub(self):
-        self.scaner_q.publish(self.mapa_local)
+                    dist_x = pos0[0] - pos1[0]
+                    dist_y = pos0[1] - pos1[1]
+                    self.particulas[part].move(dist_x, dist_y, 0)
+                    self.particulas[part].peso = new_part[part].peso
+
+            self.publish_particules()
 
     def likelyhood_fields(self, theta, valor, hip):
         if self.map is not None and valor < 4:
+            pos = hip.pos()
+            q_old = hip.peso
             angulo = self._ang_min + theta*self._ang_increment
 
-            x = hip[0] + valor * np.cos(self.yaw + angulo)
-            y = hip[1] + valor * np.sin(self.yaw + angulo)
+            x = pos[0] + valor * np.cos(pos[2] + angulo)
+            y = pos[1] + valor * np.sin(pos[2] + angulo)
             distance, coordenadas = self.find_closest_point((x, y))
-            prob = gauss(distance, 0)
-            q_new = 1 * prob
-
-            if theta in self.q.keys():
-                q_old = self.q[theta]
-                q_new = q_old * prob
-                self.q[theta] = q_new
-            else:
-                self.q[theta] = q_new
+            cosa = np.mean(self.pesos)
+            prob = gauss(distance, self.sigma)
+            q_new = q_old * prob
             return q_new
         else:
             return 0
@@ -150,7 +181,7 @@ class Lidar(object):
 
         for part in self.particulas:
             part_pose = Pose()
-            part_pose.position.x, part_pose.position.y = part[0], part[1]
+            part_pose.position.x, part_pose.position.y = part.x, part.y
             quat = quaternion_from_euler(0, 0, 0)
 
             part_pose.orientation.x = quat[0]

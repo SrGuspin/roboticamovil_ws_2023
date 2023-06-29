@@ -12,7 +12,7 @@
   <node pkg="lab3_pkg" name="map_broadcaster" type="map_broadcaster.py" output = "screen"/>
   <node pkg="lab3_pkg" name="particles_manager" type="particles_manager.py" output = "screen"/>
   <node pkg="lab3_pkg" name="lidarSensor" type="lidarSensor.py" output = "screen"/>
-
+  <node pkg="lab3_pkg" name="movimiento_manager" type="movimiento_manager.py" output = "screen"/>
   
   <node type="rviz" name="rviz" pkg="rviz" args="-d $(find lab3_pkg)/rviz/pf_cfg.rviz"/>
   

@@ -19,7 +19,7 @@ class ParticlesManager(object):
         self.connections_init()
 
     def variables_init(self):
-        self.num_particles = 181
+        self.num_particles = 3000
         self.sigma = 0.01
 
         self.particles = []

@@ -3,8 +3,9 @@ from random import gauss
 
 class Particle(object):
 
-    def __init__(self, x, y, ang, sigma=0.1):
+    def __init__(self, x, y, ang, sigma=0.1, peso=1):
         self.x, self.y, self.ang = x, y, ang
+        self.peso = peso
         self.last_x, self.last_y, self.last_ang = x, y, ang
         self.sigma = sigma
 
