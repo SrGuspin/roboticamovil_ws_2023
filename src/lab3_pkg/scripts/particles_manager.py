@@ -19,7 +19,7 @@ class ParticlesManager(object):
         self.connections_init()
 
     def variables_init(self):
-        self.num_particles = 1200
+        self.num_particles = 181
         self.sigma = 0.01
 
         self.particles = []
@@ -86,4 +86,3 @@ if __name__ == '__main__':
 
     free_positions = map.get_free_positions()
     particle_manager.create_particles(free_positions)
-    

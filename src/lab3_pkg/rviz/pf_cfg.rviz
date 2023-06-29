@@ -7,7 +7,6 @@ Panels:
         - /Global Options1
         - /Status1
         - /PoseArray1
-        - /Map2
       Splitter Ratio: 0.5
     Tree Height: 719
   - Class: rviz/Selection
@@ -57,14 +56,14 @@ Visualization Manager:
       Class: rviz/Map
       Color Scheme: map
       Draw Behind: false
-      Enabled: false
+      Enabled: true
       Name: Map
       Topic: /pf_map
       Unreliable: false
       Use Timestamp: false
-      Value: false
+      Value: true
     - Alpha: 1
-      Arrow Length: 0.009999999776482582
+      Arrow Length: 0.10000000149011612
       Axes Length: 0.30000001192092896
       Axes Radius: 0.009999999776482582
       Class: rviz/PoseArray
@@ -77,18 +76,8 @@ Visualization Manager:
       Shaft Length: 0.23000000417232513
       Shaft Radius: 0.009999999776482582
       Shape: Arrow (Flat)
-      Topic: /particles
+      Topic: /pf_location
       Unreliable: false
-      Value: true
-    - Alpha: 0.5
-      Class: rviz/Map
-      Color Scheme: costmap
-      Draw Behind: false
-      Enabled: true
-      Name: Map
-      Topic: /scaner_q
-      Unreliable: false
-      Use Timestamp: false
       Value: true
   Enabled: true
   Global Options:
@@ -118,7 +107,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.3310108184814453
+      Distance: 1.6784758567810059
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -126,17 +115,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 1.1839927434921265
-        Y: 1.0747747421264648
-        Z: -0.0777006447315216
+        X: 1.1861261129379272
+        Y: 2.0069925785064697
+        Z: 0.29508253931999207
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.264796495437622
+      Pitch: 1.4647964239120483
       Target Frame: <Fixed Frame>
-      Yaw: 4.663578510284424
+      Yaw: 4.718579292297363
     Saved: ~
 Window Geometry:
   Displays:

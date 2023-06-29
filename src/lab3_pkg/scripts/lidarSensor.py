@@ -2,13 +2,13 @@
 
 import rospy
 from scipy import spatial
-from geometry_msgs.msg import Twist, PoseArray, Pose
+from geometry_msgs.msg import PoseArray, Pose
+from tf.transformations import quaternion_from_euler
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Header
 from nav_msgs.msg import OccupancyGrid
 import numpy as np
-from random import gauss
-from pf_map import pub_initial_pose
+from random import gauss, choices
 
 
 class Lidar(object):
@@ -24,6 +24,9 @@ class Lidar(object):
         self.angular_speed = 0
         self.sigma_hit = 0.3
         self.map = None
+        self.particulas = None
+        self.q = {}
+        self.pesos = [i for i in range(181)]
         rospy.init_node('lidar')
         self.rate_hz = 10
         self.mapa_local = OccupancyGrid()
@@ -35,16 +38,16 @@ class Lidar(object):
         self.scaner_q = rospy.Publisher(
             '/scaner_q', OccupancyGrid, queue_size=10)
         self.__particle_sub = rospy.Subscriber(
-            "particles", PoseArray, queue_size=2)
+            "particles", PoseArray, self.particle_cb, queue_size=2)
+
+        self.pub_particules = rospy.Publisher(
+            "/pf_location", PoseArray, queue_size=10)
         rospy.sleep(2)
-        self.q = {}
 
     def particle_cb(self, data):
-        # store particles
-        pass
-
-    def move_particles(self, where):
-        # move particles and assign sigma value
+        self.particulas = [(pose.position.x, pose.position.y)
+                           for pose in data.poses]
+        rospy.loginfo("Particulas recibidas!")
         pass
 
     def mapa_cb(self, data):
@@ -59,16 +62,13 @@ class Lidar(object):
         self.mapa_local.data = [1 for _ in range(self.width * self.height)]
 
         grid = np.array(data.data).reshape(self.height, self.width)
+        self.x = origin.position.x
+        self.y = origin.position.y
 
         self.points = [[x * self.resolution + origin.position.x, y * self.resolution + origin.position.y]
                        for y in range(self.height) for x in range(self.width) if grid[y, x] > 50]
-        pub_initial_pose(x=origin.position.x, y=origin.position.y, yaw=0.0)
-
-        # KDTree del mapa real.
-        # a KDTree hay que pasarle los obstáculos
 
         self.map = spatial.KDTree(self.points)
-        self.q = {}
 
     def find_closest_point(self, point):
         distance, index = self.map.query(point)
@@ -78,71 +78,74 @@ class Lidar(object):
         return distance, coordenadas
 
     def lidar_cb(self, data):
-        self._range_max = data.range_max
-        self._range_min = data.range_min
-        self._ang_increment = data.angle_increment
-        self._ang_min = data.angle_min
-        self._ang_max = data.angle_max
+        if self.particulas is not None:
+            self._range_max = data.range_max
+            self._range_min = data.range_min
+            self._ang_increment = data.angle_increment
+            self._ang_min = data.angle_min
+            self._ang_max = data.angle_max
 
-        self.ranges = data.ranges
-        self.dist = []
-        for theta, valor in enumerate(self.ranges):
-            # obtener particulas hipoteticas
-            # a cada particula se le asigna un peso
-            self.likelyhood_fields(theta, valor)
-            # reescribo las poses hipoteticas como el valor verdadero del coso.
+            self.ranges = data.ranges
+            self.dist = []
 
-        # HACE QUE SE MUEVA EL ROBOT CADA 5 SEGUNDOS
-        # la idea de esto es que se detenga cada cierto avance para tomar datos
-        self.new_time = int(rospy.get_time())
-        if (self.new_time - self.old_time) == 5:
-            # pose_array_msg = PoseArray()
-            # self.se_mueve = 1
-            # pose_array_msg.header.frame_id = str(self.se_mueve)
-            # self.mover.publish(pose_array_msg)
-            pass
+            for theta, valor in enumerate(self.ranges):
+                # obtener particulas hipoteticas
+                # a cada particula se le asigna un peso
+                particula = choices(self.particulas, self.pesos, k=1)
+                w = self.likelyhood_fields(theta, valor, particula[0])
+                self.pesos[theta] = w
+                # reescribo las poses hipoteticas como el valor verdadero del coso.
+            pesos_sum = sum(self.pesos)
 
-        if (self.new_time - self.old_time) == 10 or self.old_time == 0:
-            self.old_time = self.new_time
-            # pose_array_msg = PoseArray()
-            # self.se_mueve = 0
-            # pose_array_msg.header.frame_id = str(self.se_mueve)
-            # self.mover.publish(pose_array_msg)
-            self.lidar_pub()
+            # Normaliza cada probabilidad en la lista
+            if pesos_sum != 0:
+                self.pesos = [peso / pesos_sum for peso in self.pesos]
+                self.particulas = choices(
+                    self.particulas, weights=self.pesos, k=len(self.particulas))
+            self.publish_particules()
 
     def lidar_pub(self):
         self.scaner_q.publish(self.mapa_local)
 
-    def likelyhood_fields(self, theta, valor):
+    def likelyhood_fields(self, theta, valor, hip):
         if self.map is not None and valor < 4:
             angulo = self._ang_min + theta*self._ang_increment
 
-            x = self.x + valor * np.cos(self.yaw + angulo)
-            y = self.y + valor * np.sin(self.yaw + angulo)
-            # rospy.sleep(5)
+            x = hip[0] + valor * np.cos(self.yaw + angulo)
+            y = hip[1] + valor * np.sin(self.yaw + angulo)
             distance, coordenadas = self.find_closest_point((x, y))
-            # rospy.loginfo(f'punto: {punto}')
-            dist = round(
-                np.sqrt(((x - coordenadas[0])**2) + ((y - coordenadas[1])**2)), 3)
-            # rospy.loginfo(f'dist: {dist}')
-            prob = gauss(dist, self.sigma_hit)
-            # rospy.loginfo(f'prob: {prob}')
+            prob = gauss(distance, 0)
             q_new = 1 * prob
 
             if theta in self.q.keys():
-                q_old = self.q[theta][0]
+                q_old = self.q[theta]
                 q_new = q_old * prob
-                self.q[theta] = [q_new, (x, y)]
-                # OBTENEER OCCUPANCY MAP PARA MAPA_LOCAL
-                x = int((x)/self.resolution)
-                y = int((y)/self.resolution)
-                if 0 <= x < self.mapa_local.info.width - 1 and 0 <= y < self.mapa_local.info.height - 1:
-                    pos = y * self.mapa_local.info.width + x
-                    if pos < len(self.mapa_local.data) - 1:
-                        self.mapa_local.data[pos] = int(q_new * 100)
-
+                self.q[theta] = q_new
             else:
-                self.q[theta] = [q_new, (x, y)]
+                self.q[theta] = q_new
+            return q_new
+        else:
+            return 0
+
+    def publish_particules(self):
+        # aqui creamos uno poseArray para mostra las particulas en Rviz
+        pose_array_msg = PoseArray()
+        pose_array_msg.header.frame_id = "pf_map_frame"
+
+        for part in self.particulas:
+            part_pose = Pose()
+            part_pose.position.x, part_pose.position.y = part[0], part[1]
+            quat = quaternion_from_euler(0, 0, 0)
+
+            part_pose.orientation.x = quat[0]
+            part_pose.orientation.y = quat[1]
+            part_pose.orientation.z = quat[2]
+            part_pose.orientation.w = quat[3]
+
+            pose_array_msg.poses.append(part_pose)
+
+        pose_array_msg.header.stamp = rospy.Time.now()
+        self.pub_particules.publish(pose_array_msg)
 
 
 if __name__ == '__main__':
