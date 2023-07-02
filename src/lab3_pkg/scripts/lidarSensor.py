@@ -58,6 +58,7 @@ class Lidar(object):
 
     def update_particle_positions(self):
         # This method should be called periodically to update the particle positions
+        
         if self.robot_velocity is not None and self.particulas is not None:
             dt = 1/10  # time since last update
             dtheta = self.robot_velocity.angular.z * dt
