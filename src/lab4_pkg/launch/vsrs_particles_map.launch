@@ -1,21 +1,17 @@
 <?xml version="1.0"?>
 <launch>
 
-  <include file="$(find very_simple_robot_simulator)/launch/minimal_simulator.launch" />
-  <!-- <include file="$(find very_simple_robot_simulator)/launch/lidar_simulator_py.launch" /> -->
-
+  <node pkg="very_simple_robot_simulator" name="kobuki_simulator" type="kobuki_simulator"/>
   <node pkg="very_simple_robot_simulator" name="lidar_simulator" type="lidar_simulator">
    <param name="effective hfov"     type="int"    value="181"/> 
    <param name="view depth"     type="double"    value="20.0"/> 
   </node>
 
-  <!-- <include file="$(find very_simple_robot_simulator)/launch/world_state.launch" /> -->
 
-  <node pkg="very_simple_robot_simulator" name ="world_state_gui" type ="world_state_gui.py">
-   <param name="/map_file" type="yaml" value="$(find lab4_pkg)/map/mapa_bodega.yaml"/>
-  </node>
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find lab4_pkg)/map/mapa_bodega.yaml" />
+
   
-  <node pkg="lab4_pkg" name="map_broadcaster" type="map_broadcaster.py" output = "screen"/>
+  
   <!-- <node pkg="lab4_pkg" name="particles_manager" type="particles_manager.py" output = "screen"/>
   <node pkg="lab4_pkg" name="lidarSensor" type="lidarSensor.py" output = "screen"/>
   <node pkg="lab4_pkg" name="movimiento_manager" type="movimiento_manager.py" output = "screen"/> -->
