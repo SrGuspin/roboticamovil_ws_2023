@@ -1,6 +1,0 @@
-<launch>
-<param name="/camera/driver/data_skip" value="2" />
-<include file="$(find freenect_launch)/launch/freenect.launch" />
-<include file="$(find kobuki_node)/launch/freenect.launch" />
-
-</launch>

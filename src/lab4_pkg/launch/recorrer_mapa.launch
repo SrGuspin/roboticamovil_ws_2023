@@ -1,5 +1,0 @@
-<launch>
-
-    <node pkg="lab3_pkg" name="movimiento_manager" type="movimiento_manager.py" output="screen" />
-
-</launch>
