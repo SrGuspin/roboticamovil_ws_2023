@@ -1,36 +1,43 @@
 <?xml version="1.0"?>
 <launch>
+  
 
-  <node pkg="very_simple_robot_simulator" name="kobuki_simulator" type="kobuki_simulator"/>
+  <node pkg="very_simple_robot_simulator" name="kobuki_simulator" type="kobuki_simulator.py" />
   
   <node pkg="very_simple_robot_simulator" name="lidar_simulator" type="lidar_simulator">
    <param name="effective_hfov" value="181"/> 
    <param name="view_depth" value="20.0"/> 
   </node>
 
+  <node pkg="very_simple_robot_simulator" name ="world_state_gui" type ="world_state_gui.py">
+   <param name="/map_file" type="yaml" value="$(find lab4_pkg)/map/mapa_bodega.yaml"/>
+  </node>
 
 
   <node name="map_server" pkg="map_server" type="map_server" args="$(find lab4_pkg)/map/mapa_bodega.yaml" />
-  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 base_link laser 100" />
+  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 base_link laser_link 100" />
   
   <node name="amcl" pkg="amcl" type="amcl">
     <param name="odom_model_type" value="diff"/>
     <param name="use_map_topic" value="true"/>
-    <!-- <param name="initial_pose_x" value="5.325"/> 
+    <param name="initial_pose_x" value="5.325"/> 
     <param name="initial_pose_y" value="0.814"/> 
-    <param name="initial_pose_a" value="1.57"/> -->
+    <param name="initial_pose_a" value="1.57"/>
+    <param name="initial_cov_xx" value="0.01"/>
+    <param name="initial_cov_yy" value="0.01"/>
+    <param name="initial_cov_aa" value="0.01"/>
 
-    <param name="initial_pose_x" value="1"/> 
-    <param name="initial_pose_y" value="1"/> 
-    <param name="initial_pose_a" value="0"/>
+
     <param name="laser_max_beams" value="181"/>
-    <param name="laser_z_max" value="4.0"/>
-    <param name="min_particles" value="250"/>
+    <param name="min_particles" value="3000"/>
+    <param name="recovery_alpha_slow" value="0.01"/>
+    <param name="recovery_alpha_fast" value="0.01"/>
 
-    <param name="update_min_a" value="0.01"/>
-    <param name="update_min_d" value="0.01"/>
+    <param name="update_min_a" value="0.1"/>
+    <param name="update_min_d" value="0.1"/>
     <param name="transform_tolerance" value="2.0"/>
   </node>
+
 
   <node name="move_base" pkg="move_base" type="move_base">
     <param name="controller_frequency" value="5.0"/>
@@ -41,7 +48,10 @@
     <rosparam file="$(find lab4_pkg)/param/dwa_local_planner_params.yaml" command="load"/>
     <rosparam file="$(find lab4_pkg)/param/move_base_params.yaml" command="load"/>
   </node>
-  
+
   <node type="rviz" name="rviz" pkg="rviz" args="-d $(find lab4_pkg)/rviz/pf_cfg.rviz"/>
+
+  <node pkg="rqt_robot_steering" type="rqt_robot_steering" name="rqt_robot_steering" output="screen" />
+
   
 </launch> 
