@@ -38,7 +38,6 @@ if __name__ == '__main__':
         move_base_goal.target_pose.pose = goal_pose
         move_base_client.send_goal(move_base_goal, done_cb=goal_done)
 
-        # Wait for this goal to complete before going to next position
         move_base_client.wait_for_result()
 
     rospy.spin()
