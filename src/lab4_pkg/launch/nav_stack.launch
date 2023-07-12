@@ -55,7 +55,7 @@
 
   <node pkg="rqt_robot_steering" type="rqt_robot_steering" name="rqt_robot_steering" output="screen" />
 
-  <!-- <node pkg="lab4_pkg" name ="nav_stack_example" type ="nav_stack_example.py" /> -->
+  <node pkg="lab4_pkg" name ="nav_stack_example" type ="nav_stack_example.py" />
 
   
 </launch> 
